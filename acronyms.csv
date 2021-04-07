@@ -1,0 +1,96 @@
+Acronym,Definition,Meaning,Notes
+AD,Active Directory,A directory service for Windows servers,Software Development Industry Term
+APAC,Asia Pacific Geo,BB Geographic Region,Blackboard Term
+API,Application Programming Interface,,Software Development Industry Term
+APM ,Agile Program Manager,,Business Standard Term
+APMO ,Agile Program Management Office,,Business Standard Term
+ART,Agile Release Train,,Scaled Agile Framework (SAFe) Term
+AX,Accessiblity ,,Business Standard Term
+Bb/BB,Blackboard ,"Not to be confused with BB, which is Bill Ballhaus, Blackboard's CEO",Blackboard Term
+BG/BizGov,BizGov Market,BB Market,Blackboard Term
+BO ,Business Owner,,Scaled Agile Framework (SAFe) Term
+CDP,Continuous Delivery Pipeline,,Software Development Industry Term
+CE ,Community Engagement,,Blackboard Term
+CEOLT,CEO Leadership Team,https://www.blackboard.com/about-us/leadership,Blackboard Term
+CoP,Community of Practice,,Business Standard Term
+CP,Channel Partners Market,BB Market - resellers of our products in other parts of the world,Blackboard Term
+CRM,Customer Relationship Management,The process and systems that relate to storing and managing customer information,Software Development Industry Term
+DAA,DevOps and Agile Advocacy ,,Blackboard Term
+DOD,Definition of Done,,Agile Term
+DPC,Data Privacy Champion ,Designated employees to support their areas and the Global Privacy Officer ,Blackboard Term
+DRS ,Developer Relations and Standards ,,Blackboard Term
+ELT ,Extended Leadership Team ,,Blackboard Term
+EMEA,"Europe, Middle East and Africa",BB Geographic Region,Blackboard Term
+EO,Epic Owner,,Scaled Agile Framework (SAFe) Term
+EQP,Engineering Quality and Productivity,,
+FNDS,Foundations,,Blackboard Term
+Geo,Geographic Region,"BB Geos = NA, LAC, RMEA, Europe, APAC",Blackboard Term
+GPO ,Global Privacy Officer ,Leader for Blackboard's data privacy program. member of the legal team and works closely with the security team ,Blackboard Term
+GTB,Grow the Business,,Scaled Agile Framework (SAFe) Term
+GTM,Go To Market,,Business Standard Term
+H0,Horizon 0,Investment Horizon - Retiring - https://www.scaledagileframework.com/lean-budgets/,Scaled Agile Framework (SAFe) Term
+H1,Horizon 1,Investment Horizon - Investing/Extracting - https://www.scaledagileframework.com/lean-budgets/,Scaled Agile Framework (SAFe) Term
+H2,Horizon 2,Investment Horizon - Emerging - https://www.scaledagileframework.com/lean-budgets/,Scaled Agile Framework (SAFe) Term
+H3,Horizon 3,Investment Horizon - Exploring - https://www.scaledagileframework.com/lean-budgets/,Scaled Agile Framework (SAFe) Term
+HE,Higher Ed Market,BB Market - beyond K-12,Blackboard Term
+I&A,Inspect and Adapt,,Scaled Agile Framework (SAFe) Term
+IDE,Integrated Development Environment,,Software Development Industry Term
+IP,Innovation and Planning,Innovation and Planning Sprint at the end of a Program Increment (PI),Scaled Agile Framework (SAFe) Term
+ISTE,The International Society for Technology in Education ,"A large K-12 member association. They publish reports, newsletters, journals and other content throughout the year. Their events are important for our K-12 market, especially their annual conference that brings together over 10,000 educators.",EdTech Term
+K12,K-12 Market,BB Market,Blackboard Term
+KR,Key Result,As in OKR,Business Standard Term
+L10N,Localization ,,Blackboard Term
+LAC ,Latin American Countries Geo,BB Geographic Region,Blackboard Term
+LACE,Lean Agile Center of Excellence?,,Scaled Agile Framework (SAFe) Term
+LMS,Learning Management Systems,,
+LPM,Lean Portfolio Management,,Scaled Agile Framework (SAFe) Term
+LTI,Learning Tool Interoperability,A standard format for launching from one tool to another for edtech,Software Development Industry Term
+LTI,Learning Tools Interoperability,,EdTech Term
+Markets,Markets,"Blackboard Markers = Higher ed (HE), K12, business/government (biz/gov), and channel partners ",Blackboard Term
+MBR,Monthly Business Review,,Business Standard Term
+MCU,Multiport Control Unit,�collab server used for managing meetings and distributing content,Software Development Industry Term
+MH,Managed Hosted,,Software Development Industry Term
+MVP,Minimum Valuable (Viable) Product,,Software Development Industry Term
+NA,North American Geo,BB Geographic Region,Blackboard Term
+NAHE,North American Higher Education,Geo and Market,Blackboard Term
+NFR,Non-functional Requirement,,Software Development Industry Term
+NSPRA,National School Public Relations Association,"An important community for our K-12 business. This group represents Communications Directors nation-wide, who are the primary buyer for our community engagement suite.",EdTech Term
+OKR,Objective and Key Results,,Business Standard Term
+OUG,Organic Usage Growth,,Business Standard Term
+PB ,Participatory Budgeting,,Scaled Agile Framework (SAFe) Term
+PBW,Participatory Budgeting Workshop,,Scaled Agile Framework (SAFe) Term
+PDD,Product Development and Delivery,,Blackboard Term
+PDDSLT,Product Development and Delivery Senior Leadership Team ,Tim Tomlinson's Staff ,Blackboard Term
+PE,Process Enablement,One of the departments within Shared Services. ,Blackboard Term
+PI,Program Increment,Larger timebox at the Release Train level - 1 quarter at BB,Scaled Agile Framework (SAFe) Term
+PII,Personally identifiable information,,Business Standard Term
+PjM,Project Manager,"Blackboard shorthand for Project Manager, so we don't confuse it with PM for Product Manager. ",Business Standard Term
+PLM,Product Line Management,,Blackboard Term
+PM,Product Manager,,Scaled Agile Framework (SAFe) Term
+PMM,Product Management and Marketing,,Blackboard Term
+PO,Product Owner,,Agile Term
+RTB,Run The Business,,Scaled Agile Framework (SAFe) Term
+RTE,Release Train Engineer,,Scaled Agile Framework (SAFe) Term
+SAAS,Software as a Service,Software that is available online and accessed by users as needed. An alternative to software that is downloaded,Software Development Industry Term
+SAFe,Scaled Agile Framework,Scaling framework we are using at Blackboard to take our Agile Practices to the next level,Scaled Agile Framework (SAFe) Term
+SDK,Software Development Tool Kit,,Software Development Industry Term
+SDK,Stacked Development Kit,,Software Development Industry Term
+SDM,Service Delivery Manager,,
+SH,Self Hosted,,Software Development Industry Term
+SM,Scrum Master,,Agile Term
+SME,Subject Matter Expert,,Software Development Industry Term
+SPC,SAFe Program Consultant,,Scaled Agile Framework (SAFe) Term
+SPR,Strategic Porfolio Review,,
+SSLT,Shared Services Leadership Team ,Jason Kagel's Staff ,Blackboard Term
+TBD,To be determined,,Business Standard Term
+TD,Technical Debt,,Software Development Industry Term
+UAS,Universal Authentication Service,,Software Development Industry Term
+UEF,Ultra Extension Framework,The ability to integrate with Ultra UI to know what a user is doing from an external application and embed your application in various places within Ultra,Blackboard Term
+UXD,User Experience Design,,Software Development Industry Term
+VLE,Virtual Learning Experience,a web-based platform that drives the digital experience for learning. This term is used more commonly in Europe in place of the LMS.,EdTech Term
+VS,Value Stream?,,Scaled Agile Framework (SAFe) Term
+WIP,Work in Progress,,Agile Term
+WSJF,Weighted Shortest Job First,,Agile Term
+X18N,Internationalization ,,Blackboard Term
+XP,Extreme Programming,,Agile Term
+TPP,Technical Planning Page,,

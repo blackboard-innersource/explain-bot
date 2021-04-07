@@ -1,0 +1,8 @@
+site_name: "explain-bot"
+site_description: "A Slackbot for defining acronyms, built in Python, deployed with CDK."
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core
