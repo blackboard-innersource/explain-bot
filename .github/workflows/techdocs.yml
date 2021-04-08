@@ -18,7 +18,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.TECHDOCS_AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.TECHDOCS_AWS_REGION }} 
       ENTITY_NAMESPACE: 'default'
-      ENTITY_KIND: 'Componenet'
+      ENTITY_KIND: 'Component'
       ENTITY_NAME: "explain-bot"
       # In a Software template, Scaffolder will replace "test-techdocs-innersource"
       # with the correct entity name. This is same as metadata.name in the entity's catalog-info.yaml
