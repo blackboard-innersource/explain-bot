@@ -2,7 +2,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: "explain-bot"
-  description: "A Slackbot for defining acronyms, built in Python, deployed with CDK."
+  description: "A Slackbot for defining acronyms, built in Python, deployed with CDK"
   annotations:
     github.com/project-slug: blackboard-innersource/explain-bot
     backstage.io/techdocs-ref: url:https://github.com/blackboard-innersource/explain-bot
