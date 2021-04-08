@@ -55,5 +55,5 @@ Now simply login to Blackboard-Sandbox.slack.com with your AFDS credentials, and
 
 ## How to contribute
 
-This is 100% MVP level. There are a number of enhancements, which I will add as issues to this repo. In addition, I wrote this to learn CDK, so feel free to help improve the CDK implementation. I only ask that you create an issue and document what you are changing and why, so I, as well as anyone else that comes along, can learn why you have made that change. If you have any questions, slack Scott Hurrey.
+This is 100% MVP level. There are a number of enhancements, which I will add as issues to this repo. In addition, I wrote this to learn CDK, so feel free to help improve the CDK implementation. I only ask that you create an issue and document what you are changing and why, so I, as well as anyone else that comes along, can learn why you have made that change.
 
