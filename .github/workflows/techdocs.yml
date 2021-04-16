@@ -10,7 +10,7 @@ jobs:
   publish-techdocs-site:
     runs-on: ubuntu-latest
 
-    # The following secrets are required in your CI environment for publishing files to AWS S3.
+    # The following secrets are required in your CI environment for publishing files to AWS  S3.
     # e.g. You can use GitHub Organization secrets to set them for all existing and new repositories.
     env: 
       TECHDOCS_S3_BUCKET_NAME: ${{ secrets.TECHDOCS_S3_BUCKET_NAME }}
