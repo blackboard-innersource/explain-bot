@@ -1,4 +1,3 @@
-
 # Explain Bot
 
 **Explain Bot** is a slackbot, written in Python and deployed to AWS with CDK. The purpose of this bot is to help users learn about acronyms in use at Blackboard, with a focus around SAFe terms. That said, it is not limited in anyway. 
