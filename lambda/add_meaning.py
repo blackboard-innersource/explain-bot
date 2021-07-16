@@ -105,10 +105,23 @@ def lambda_handler(event, context):
     payload = json.loads(body.get('payload',"no-payload"))
     
     print("Payload: " + str(payload) )
-    
+
     acronym = payload['view']['state']['values']['acronym_block']['acronym_input']['value']
     print("acronym: " + acronym)
-        
+
+    userId = payload['user']['id']
+    print('user id:' + userId)
+
+    return_url = payload['response_urls'][0]['response_url']
+
+    actions=payload.get('actions')
+    if actions is not None:
+        value=actions[0]['value']
+        if value == 'Approve':
+            return approveAcronym(acronym, userId, return_url)
+        if value == 'Deny':
+            return denyAcronym(acronym, userId, return_url)
+
     definition = payload['view']['state']['values']['definition_block']['definition_input']['value']
     print("definition: " + definition)
     
@@ -127,8 +140,6 @@ def lambda_handler(event, context):
     else:
         print("no notes")
         notes = ""
-        
-    return_url = payload['response_urls'][0]['response_url']
     
     status_code = define(acronym,definition,meaning,notes,return_url)
     
@@ -136,6 +147,48 @@ def lambda_handler(event, context):
         "statusCode" : status_code
     }
 
+def approveAcronym(acronym, userId):
+    result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+    approvers = result['Items'][0].get('Approvers', [])
+
+    approvers.append(userId)
+
+    response = table.update_item(
+        Key={
+            'Acronym': acronym
+        },
+        UpdateExpression="set Approvers=:a",
+        ExpressionAttributeValues={
+            ':a': approvers,
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+
+    return {
+        "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
+    }
+
+def denyAcronym(acronym, userId):
+    result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+    denyers = result['Items'][0].get('Denyers', [])
+
+    denyers.append(userId)
+
+    response = table.update_item(
+        Key={
+            'Acronym': acronym
+        },
+        UpdateExpression="set Denyers=:d",
+        ExpressionAttributeValues={
+            ':d': denyers,
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+
+    return {
+        "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
+    }
+    
 def check_hash(event):
   slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
   body = get_body(event)
