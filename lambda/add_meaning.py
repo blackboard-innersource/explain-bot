@@ -244,6 +244,9 @@ def approveAcronym(acronym, userId):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
     approvers = result['Items'][0].get('Approvers', [])
 
+    if checkAlreadyReviewed(result, userId):
+        return {"statusCode": 400}
+
     approvers.append(userId)
 
     response = table.update_item(
@@ -265,6 +268,9 @@ def denyAcronym(acronym, userId):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
     denyers = result['Items'][0].get('Denyers', [])
 
+    if checkAlreadyReviewed(result, userId):
+        return {"statusCode": 400}
+
     denyers.append(userId)
 
     response = table.update_item(
@@ -281,6 +287,13 @@ def denyAcronym(acronym, userId):
     return {
         "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
     }
+
+def checkAlreadyReviewed(userId, result):
+    approvers = result['Items'][0].get('Approvers', [])
+    denyers = result['Items'][0].get('Denyers', [])
+
+    return userId in approvers or userId in denyers
+
     
 def check_hash(event):
   slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
