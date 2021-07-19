@@ -43,7 +43,7 @@ class ExplainSlackBotStack(cdk.Stack):
             environment = {
                 'SLACK_SIGNING_SECRET': cfg.config['SLACK_SIGNING_SECRET'],
                 'OAUTH_TOKEN' : cfg.config['OAUTH_TOKEN'],
-                'UPDATERS' : cfg.config['UPDATERS']
+                'APPROVERS' : cfg.config['APPROVERS']
             }
         )
 
@@ -55,7 +55,7 @@ class ExplainSlackBotStack(cdk.Stack):
             environment = {
                 'SLACK_SIGNING_SECRET': cfg.config['SLACK_SIGNING_SECRET'],
                 'OAUTH_TOKEN' : cfg.config['OAUTH_TOKEN'],
-                'UPDATERS' : cfg.config['UPDATERS']
+                'APPROVERS' : cfg.config['APPROVERS']
             }
         )
 

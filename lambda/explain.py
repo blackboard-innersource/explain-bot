@@ -18,7 +18,6 @@ dynamodb = boto3.resource('dynamodb')
 # set environment variable
 TABLE_NAME = os.environ['TABLE_NAME']
 OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
-UPDATERS = os.environ['UPDATERS'].split(',')
 
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
@@ -201,12 +200,7 @@ def lambda_handler(event, context):
             if i != len(text):
                 definition += ' '
                 
-        if user_name in UPDATERS:
-            response = create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_id)
-        
-        else:
-            response = f'{user_name} does not have permission to define {acronym} as {definition} from #{channel_name} on {team_domain}.slack.com'
-            
+        response = create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_id)
 
     elif (len(text) == 1):
         acronym = text[0].upper()
