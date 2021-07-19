@@ -175,6 +175,31 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
         else:
             print("Skip approver due to approver sent acronym request")
 
+def notify_pending_approval(user_name, acronym):
+    """Sends a direct message to notify acronym is pending approvals"""
+    body = {
+        "channel": user_name,
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": ":thankyou: We have received your submission for '" + acronym + "'. Now it's pending approval."
+                }
+            }
+        ]
+    }
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OAUTH_TOKEN
+    }
+    print("headers: " + str(headers))
+
+    response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
+    print("response: " + str(response.status) + " " + str(response.data))
+
+
 def lambda_handler(event, context):
     print("add_meaning: " + str(event))
     
