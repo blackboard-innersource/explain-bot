@@ -102,7 +102,7 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
 
     for approver in APPROVERS:
         if approver != user_id:
-            
+
             #Send approval request
             modal={
                 "blocks": [
@@ -168,37 +168,12 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
                 'Authorization': 'Bearer ' + OAUTH_TOKEN
             }
             print("headers: " + str(headers))
-            
+
             response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(modal), headers=headers)
             print("response: " + str(response.status) + " " + str(response.data))
 
         else:
             print("Skip approver due to approver sent acronym request")
-
-def notify_pending_approval(user_name, acronym):
-    """Sends a direct message to notify acronym is pending approvals"""
-    body = {
-        "channel": user_name,
-        "blocks": [
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": ":thankyou: We have received your submission for '" + acronym + "'. Now it's pending approval."
-                }
-            }
-        ]
-    }
-
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + OAUTH_TOKEN
-    }
-    print("headers: " + str(headers))
-
-    response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
-    print("response: " + str(response.status) + " " + str(response.data))
-
 
 def lambda_handler(event, context):
     print("add_meaning: " + str(event))
@@ -240,7 +215,7 @@ def lambda_handler(event, context):
 
     team_domain = payload['team']['domain']
     print("team_domain: " + team_domain)
-    
+
     user_id = payload['user']['id']
     print("user_id: " + user_id)
 
@@ -253,7 +228,7 @@ def lambda_handler(event, context):
     status_code = define(acronym,definition,meaning,notes,return_url)
     notify_pending_approval(user_name, acronym)
     create_approval_request(acronym,definition,meaning,team_domain,user_id,user_name)
-    
+
     return {
         "statusCode" : status_code
     }
