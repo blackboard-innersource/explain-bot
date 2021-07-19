@@ -112,8 +112,6 @@ def lambda_handler(event, context):
     userId = payload['user']['id']
     print('user id:' + userId)
 
-    return_url = payload['response_urls'][0]['response_url']
-
     actions=payload.get('actions')
     if actions is not None:
         value=actions[0]['value']
@@ -140,6 +138,8 @@ def lambda_handler(event, context):
     else:
         print("no notes")
         notes = ""
+    
+    return_url = payload['response_urls'][0]['response_url']
     
     status_code = define(acronym,definition,meaning,notes,return_url)
     
