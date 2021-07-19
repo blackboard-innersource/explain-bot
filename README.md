@@ -21,7 +21,7 @@ To continue further, we will need to install the application to the Slack worksp
 
 Once the app is installed in the Blackboard-Sandbox workspace, the app will provide you the last piece of information we require for deployment. Back in the place where you registered and configured you application, there is a left-hand navigation item for _OAuth & Permissions_. Click this link and copy the _Bot User OAuth Token_ to your clipboard. Paste this token in your Config.py as the value for the "OAUTH_TOKEN" key. 
 
-Lastly, in the Config.py file, add the Slack usernames to the "UPDATES" comma-delimited string that you wish to be able to add new definitions. Save Config.py. We are almost there.
+Lastly, in the Config.py file, add the Slack user_id to the "APPROVERS" comma-delimited string that you wish to be able to add new definitions. Save Config.py. We are almost there.
 
 Next, activate the virtual environment. If you are on Windows, execute `./source.bat` from the commandline in the project directory. If you are on Mac, execute `. .env/bin/activate` in the terminal inside the project directory. 
 

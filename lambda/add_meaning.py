@@ -10,6 +10,7 @@ import boto3
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 import urllib3
+from datetime import date
 
 # Get the service resource.
 dynamodb = boto3.resource('dynamodb')
@@ -17,6 +18,7 @@ dynamodb = boto3.resource('dynamodb')
 # set environment variable
 TABLE_NAME = os.environ['TABLE_NAME']
 OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
+APPROVERS = os.environ['APPROVERS'].split(',')
 
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
@@ -90,6 +92,88 @@ def define(acronym, definition, meaning, notes, response_url):
 
     return result
 
+def create_approval_request(acronym, definition, meaning, team_domain, user_id, user_name):
+
+    user_name_capitalized = " ".join(user_name)
+    date_requested = date.today().strftime("%d/%m/%Y")
+
+    if meaning is None:
+        meaning = "-"
+
+    for approver in APPROVERS:
+        if approver != user_id:
+            
+            #Send approval request
+            modal={
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "*You have a new request:*\n<https://" + team_domain + ".slack.com/team/" + user_id + "|" + user_name_capitalized + " - New acronym request>"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "fields": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "*Acronym:*\n " + acronym
+                            },
+                            {
+                                "type": "mrkdwn",
+                                "text": "*When:*\nSubmitted " + date_requested
+                            },
+                            {
+                                "type": "mrkdwn",
+                                "text": "*Meaning:*\n" + definition
+                            },
+                            {
+                                "type": "mrkdwn",
+                                "text": "*Notes:*\n" + meaning
+                            }
+                        ]
+                    },
+                    {
+                        "type": "actions",
+                        "elements": [
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "emoji": True,
+                                    "text": "Approve"
+                                },
+                                "style": "primary",
+                                "value": "Approve"
+                            },
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "emoji": True,
+                                    "text": "Deny"
+                                },
+                                "style": "danger",
+                                "value": "Deny"
+                            }
+                        ]
+                    }
+                ],
+                "channel": approver
+            }
+
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + OAUTH_TOKEN
+            }
+            print("headers: " + str(headers))
+            
+            response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(modal), headers=headers)
+            print("response: " + str(response.status) + " " + str(response.data))
+
+        else:
+            print("Skip approver due to approver sent acronym request")
 
 def lambda_handler(event, context):
     print("add_meaning: " + str(event))
@@ -103,9 +187,10 @@ def lambda_handler(event, context):
     print("Body: " + str(body))
     
     payload = json.loads(body.get('payload',"no-payload"))
-    
     print("Payload: " + str(payload) )
-    
+
+    # Obtain required data
+
     acronym = payload['view']['state']['values']['acronym_block']['acronym_input']['value']
     print("acronym: " + acronym)
         
@@ -127,10 +212,21 @@ def lambda_handler(event, context):
     else:
         print("no notes")
         notes = ""
-        
+
+    team_domain = payload['team']['domain']
+    print("team_domain: " + team_domain)
+    
+    user_id = payload['user']['id']
+    print("user_id: " + user_id)
+
+    user_name = [word.capitalize() for word in payload['user']['name'].split(".") ]
+    print("user_name: " + " ".join(user_name))
+
+    # Define acronym (persist in DB) and send approval request to approvers
     return_url = payload['response_urls'][0]['response_url']
     
     status_code = define(acronym,definition,meaning,notes,return_url)
+    create_approval_request(acronym,definition,meaning,team_domain,user_id,user_name)
     
     return {
         "statusCode" : status_code
