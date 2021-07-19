@@ -189,21 +189,21 @@ def lambda_handler(event, context):
     payload = json.loads(body.get('payload',"no-payload"))
     print("Payload: " + str(payload) )
 
-
-    # Obtain required data
-    acronym = payload['view']['state']['values']['acronym_block']['acronym_input']['value']
-    print("acronym: " + acronym)
-
     user_id = payload['user']['id']
     print('user id:' + user_id)
 
     actions=payload.get('actions')
     if actions is not None:
+        acronym = payload['message']['blocks'][1]['fields'][0]['text'][12:]
         value=actions[0]['value']
         if value == 'Approve':
             return approveAcronym(acronym, user_id)
         if value == 'Deny':
             return denyAcronym(acronym, user_id)
+
+    # Obtain required data
+    acronym = payload['view']['state']['values']['acronym_block']['acronym_input']['value']
+    print("acronym: " + acronym)
 
     definition = payload['view']['state']['values']['definition_block']['definition_input']['value']
     print("definition: " + definition)
