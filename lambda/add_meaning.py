@@ -178,16 +178,17 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
             print("Skip approver due to approver sent acronym request")
 
 
-def notify_pending_approval(user_name, acronym):
+def notify_pending_approval(user_id, acronym):
     """Sends a direct message to notify acronym is pending approvals"""
+    print("Sending pending approval notification...")
     body = {
-        "channel": user_name,
+        "channel": user_id,
         "blocks": [
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": ":thankyou: We have received your submission for '" + acronym + "'. Now it's pending approval."
+                    "text": "¡Thanks for contributing! We have received your submission for '" + acronym + "'. Now it's pending approval."
                 }
             }
         ]
@@ -264,8 +265,8 @@ def lambda_handler(event, context):
     return_url = payload['response_urls'][0]['response_url']
     
     status_code = define(acronym,definition,meaning,notes,return_url)
-    notify_pending_approval(user_name, acronym)
     create_approval_request(acronym,definition,meaning,team_domain,user_id,user_name)
+    notify_pending_approval(user_id, acronym)
     
     return {
         "statusCode" : status_code
