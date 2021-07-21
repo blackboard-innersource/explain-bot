@@ -19,6 +19,8 @@ dynamodb = boto3.resource('dynamodb')
 TABLE_NAME = os.environ['TABLE_NAME']
 OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
 APPROVERS = os.environ['APPROVERS'].split(',')
+APPROVERS_STR = 'Approvers'
+DENIERS_STR = 'Deniers'
 
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
@@ -189,11 +191,24 @@ def lambda_handler(event, context):
     payload = json.loads(body.get('payload',"no-payload"))
     print("Payload: " + str(payload) )
 
-    # Obtain required data
+    user_id = payload['user']['id']
+    print('user id:' + user_id)
 
+    actions = payload.get('actions')
+    if actions is not None:
+        # Obtain acronim from payload structure, if a new action is added
+        # this should be refactored to avoid an error
+        acronym = payload['message']['blocks'][1]['fields'][0]['text'][12:]
+        value = actions[0]['value']
+        if value == 'Approve':
+            return persistDecision(acronym, user_id, True)
+        if value == 'Deny':
+            return persistDecision(acronym, user_id, False)
+
+    # Obtain required data
     acronym = payload['view']['state']['values']['acronym_block']['acronym_input']['value']
     print("acronym: " + acronym)
-        
+
     definition = payload['view']['state']['values']['definition_block']['definition_input']['value']
     print("definition: " + definition)
     
@@ -215,9 +230,6 @@ def lambda_handler(event, context):
 
     team_domain = payload['team']['domain']
     print("team_domain: " + team_domain)
-    
-    user_id = payload['user']['id']
-    print("user_id: " + user_id)
 
     user_name = [word.capitalize() for word in payload['user']['name'].split(".") ]
     print("user_name: " + " ".join(user_name))
@@ -232,6 +244,39 @@ def lambda_handler(event, context):
         "statusCode" : status_code
     }
 
+def persistDecision(acronym, userId, decision):
+    result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+    
+    decisionStr = APPROVERS_STR if decision else DENIERS_STR
+    reviewers = result['Items'][0].get(decisionStr, [])
+
+    if checkAlreadyReviewed(result, userId):
+        return {"statusCode": 400}
+    
+    reviewers.append(userId)
+
+    response = table.update_item(
+        Key={
+            'Acronym': acronym
+        },
+        UpdateExpression=f"set {decisionStr}=:d",
+        ExpressionAttributeValues={
+            ':d': reviewers,
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+
+    return {
+        "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
+    }
+
+def checkAlreadyReviewed(result, userId):
+    approvers = result['Items'][0].get(APPROVERS_STR, [])
+    denyers = result['Items'][0].get(DENIERS_STR, [])
+
+    return userId in approvers or userId in denyers
+
+    
 def check_hash(event):
   slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
   body = get_body(event)
