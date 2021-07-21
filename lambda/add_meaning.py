@@ -19,6 +19,8 @@ dynamodb = boto3.resource('dynamodb')
 TABLE_NAME = os.environ['TABLE_NAME']
 OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
 APPROVERS = os.environ['APPROVERS'].split(',')
+APPROVERS_STR = 'Approvers'
+DENIERS_STR = 'Deniers'
 
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
@@ -245,7 +247,7 @@ def lambda_handler(event, context):
 def persistDecision(acronym, userId, decision):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
     
-    decisionStr = 'Approvers' if decision else 'Deniers'
+    decisionStr = APPROVERS_STR if decision else DENIERS_STR
     reviewers = result['Items'][0].get(decisionStr, [])
 
     if checkAlreadyReviewed(result, userId):
@@ -269,8 +271,8 @@ def persistDecision(acronym, userId, decision):
     }
 
 def checkAlreadyReviewed(result, userId):
-    approvers = result['Items'][0].get('Approvers', [])
-    denyers = result['Items'][0].get('Denyers', [])
+    approvers = result['Items'][0].get(APPROVERS_STR, [])
+    denyers = result['Items'][0].get(DENIERS_STR, [])
 
     return userId in approvers or userId in denyers
 
