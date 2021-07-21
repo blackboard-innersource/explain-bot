@@ -192,14 +192,16 @@ def lambda_handler(event, context):
     user_id = payload['user']['id']
     print('user id:' + user_id)
 
-    actions=payload.get('actions')
+    actions = payload.get('actions')
     if actions is not None:
+        # Obtain acronim from payload structure, if a new action is added
+        # this should be refactored to avoid an error
         acronym = payload['message']['blocks'][1]['fields'][0]['text'][12:]
-        value=actions[0]['value']
+        value = actions[0]['value']
         if value == 'Approve':
-            return approveAcronym(acronym, user_id)
+            return persistDecision(acronym, user_id, True)
         if value == 'Deny':
-            return denyAcronym(acronym, user_id)
+            return persistDecision(acronym, user_id, False)
 
     # Obtain required data
     acronym = payload['view']['state']['values']['acronym_block']['acronym_input']['value']
@@ -240,46 +242,24 @@ def lambda_handler(event, context):
         "statusCode" : status_code
     }
 
-def approveAcronym(acronym, userId):
+def persistDecision(acronym, userId, decision):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
-    approvers = result['Items'][0].get('Approvers', [])
+    
+    decisionStr = 'Approvers' if decision else 'Deniers'
+    reviewers = result['Items'][0].get(decisionStr, [])
 
     if checkAlreadyReviewed(result, userId):
         return {"statusCode": 400}
-
-    approvers.append(userId)
+    
+    reviewers.append(userId)
 
     response = table.update_item(
         Key={
             'Acronym': acronym
         },
-        UpdateExpression="set Approvers=:a",
+        UpdateExpression=f"set {decisionStr}=:d",
         ExpressionAttributeValues={
-            ':a': approvers,
-        },
-        ReturnValues="UPDATED_NEW"
-    )
-
-    return {
-        "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
-    }
-
-def denyAcronym(acronym, userId):
-    result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
-    denyers = result['Items'][0].get('Denyers', [])
-
-    if checkAlreadyReviewed(result, userId):
-        return {"statusCode": 400}
-
-    denyers.append(userId)
-
-    response = table.update_item(
-        Key={
-            'Acronym': acronym
-        },
-        UpdateExpression="set Denyers=:d",
-        ExpressionAttributeValues={
-            ':d': denyers,
+            ':d': reviewers,
         },
         ReturnValues="UPDATED_NEW"
     )
