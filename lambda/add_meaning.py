@@ -253,16 +253,23 @@ def persistDecision(acronym, userId, decision):
     
     reviewers.append(userId)
 
-    response = table.update_item(
-        Key={
+    if not decision and len(reviewers) >= 3:
+        response = table.delete_item(
+            Key={
             'Acronym': acronym
-        },
-        UpdateExpression=f"set {decisionStr}=:d",
-        ExpressionAttributeValues={
-            ':d': reviewers,
-        },
-        ReturnValues="UPDATED_NEW"
-    )
+            }
+        )
+    else:
+        response = table.update_item(
+            Key={
+                'Acronym': acronym
+            },
+            UpdateExpression=f"set {decisionStr}=:d",
+            ExpressionAttributeValues={
+                ':d': reviewers,
+            },
+            ReturnValues="UPDATED_NEW"
+        )
 
     return {
         "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
