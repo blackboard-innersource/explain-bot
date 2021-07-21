@@ -288,7 +288,7 @@ def denyAcronym(acronym, userId):
         "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
     }
 
-def checkAlreadyReviewed(userId, result):
+def checkAlreadyReviewed(result, userId):
     approvers = result['Items'][0].get('Approvers', [])
     denyers = result['Items'][0].get('Denyers', [])
 
