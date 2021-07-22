@@ -262,7 +262,7 @@ def persistDecision(acronym, userId, decision):
     if not decision and len(reviewers) >= 3:
         response = table.delete_item(
             Key={
-            'Acronym': acronym
+                'Acronym': acronym
             }
         )
     else:
