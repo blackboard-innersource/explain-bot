@@ -185,38 +185,6 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
             print("Skip approver due to approver sent acronym request")
 
 
-def check_approval_status(acronym):
-    result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
-    item = result['Items'][0]
-
-    approvers = item.get(APPROVERS_STR, [])
-    deniers = item.get(DENIERS_STR, [])
-    requester_id = item.get(REQUESTER_STR)
-
-    if len(approvers) >= REVIEWERS_MAX:
-        approved = True
-        # Update approval status
-        response = table.update_item(
-            Key={
-                'Acronym': acronym
-            },
-            UpdateExpression=f"set {APPROVAL_STR}=:d",
-            ExpressionAttributeValues={
-                ':d': APPROVAL_STATUS_APPROVED,
-            },
-            ReturnValues="UPDATED_NEW"
-        )
-        print("response: " + str(response))
-    else:
-        if len(deniers) >= REVIEWERS_MAX:
-            approved = False
-            # TODO: Remove item from DB
-        else:
-            return
-
-    notify_approval_response(acronym,approved,requester_id)
-
-
 def notify_approval_response(acronym, approved, requester_id):
     print("Sending approval response...")
 
@@ -343,14 +311,16 @@ def lambda_handler(event, context):
 
 def persistDecision(acronym, userId, decision):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+    item = result['Items'][0]
 
     decisionStr = APPROVERS_STR if decision else DENIERS_STR
 
     if len(result['Items']) == 0:
         return {"statusCode": 404}
     
-    reviewers = result['Items'][0].get(decisionStr, [])
-    approval_status = result['Items'][0].get(APPROVAL_STR)
+    reviewers = item.get(decisionStr, [])
+    approval_status = item.get(APPROVAL_STR)
+    requester_id = item.get(REQUESTER_STR)
 
     # TODO: Ignore approval action
     if checkAlreadyReviewed(result, userId) or approval_status == APPROVAL_STATUS_APPROVED:
@@ -358,30 +328,50 @@ def persistDecision(acronym, userId, decision):
 
     reviewers.append(userId)
 
-    if not decision and len(reviewers) >= 3:
-        response = table.delete_item(
-            Key={
-                'Acronym': acronym
-            }
-        )
-    else:
-        response = table.update_item(
+    if decision and len(reviewers) >= REVIEWERS_MAX:
+        table.update_item(
             Key={
                 'Acronym': acronym
             },
-            UpdateExpression=f"set {decisionStr}=:d",
+            UpdateExpression=f"set {APPROVAL_STR}=:d",
             ExpressionAttributeValues={
-                ':d': reviewers,
+                ':d': APPROVAL_STATUS_APPROVED,
             },
             ReturnValues="UPDATED_NEW"
         )
+        response = update_reviewers(acronym,reviewers,decisionStr)
+    else:
+        if not decision and len(reviewers) >= REVIEWERS_MAX:
+            response = table.delete_item(
+                Key={
+                    'Acronym': acronym
+                }
+            )
+        else:
+            response = update_reviewers(acronym,reviewers,decisionStr)
 
     if len(reviewers) >= REVIEWERS_MAX:
-        check_approval_status(acronym)
+        notify_approval_response(acronym,approved,requester_id)
 
     return {
         "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
     }
+
+
+def update_reviewers(acronym,reviewers,decisionStr):
+    response = table.update_item(
+        Key={
+            'Acronym': acronym
+        },
+        UpdateExpression=f"set {decisionStr}=:d",
+        ExpressionAttributeValues={
+            ':d': reviewers,
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+
+    return response
+
 
 def checkAlreadyReviewed(result, userId):
     approvers = result['Items'][0].get(APPROVERS_STR, [])
