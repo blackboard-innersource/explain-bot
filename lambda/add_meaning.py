@@ -111,7 +111,7 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
 
     for approver in APPROVERS:
         if approver != user_id:
-            
+
             #Send approval request
             modal={
                 "blocks": [
@@ -177,7 +177,7 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
                 'Authorization': 'Bearer ' + OAUTH_TOKEN
             }
             print("headers: " + str(headers))
-            
+
             response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(modal), headers=headers)
             print("response: " + str(response.status) + " " + str(response.data))
 
@@ -233,6 +233,31 @@ def notify_approval_response(acronym, approved, requester_id):
                 "text": {
                     "type": "mrkdwn",
                     "text": message
+                }
+            }
+        ]
+    }
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OAUTH_TOKEN
+    }
+    print("headers: " + str(headers))
+
+    response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
+    print("response: " + str(response.status) + " " + str(response.data))
+
+
+def notify_pending_approval(user_id, acronym):
+    print("Sending pending approval notification...")
+    body = {
+        "channel": user_id,
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"Thanks for contributing! We have received your submission for '{acronym}'. Now it's pending approval."
                 }
             }
         ]
@@ -310,6 +335,7 @@ def lambda_handler(event, context):
     
     status_code = define(acronym,definition,meaning,notes,return_url,user_id)
     create_approval_request(acronym,definition,meaning,team_domain,user_id,user_name)
+    notify_pending_approval(user_id,acronym)
     
     return {
         "statusCode" : status_code
@@ -317,27 +343,38 @@ def lambda_handler(event, context):
 
 def persistDecision(acronym, userId, decision):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
-    
+
     decisionStr = APPROVERS_STR if decision else DENIERS_STR
+
+    if len(result['Items']) == 0:
+        return {"statusCode": 404}
+    
     reviewers = result['Items'][0].get(decisionStr, [])
     approval_status = result['Items'][0].get(APPROVAL_STR)
 
     # TODO: Ignore approval action
     if checkAlreadyReviewed(result, userId) or approval_status == APPROVAL_STATUS_APPROVED:
         return {"statusCode": 400}
-    
+
     reviewers.append(userId)
 
-    response = table.update_item(
-        Key={
-            'Acronym': acronym
-        },
-        UpdateExpression=f"set {decisionStr}=:d",
-        ExpressionAttributeValues={
-            ':d': reviewers,
-        },
-        ReturnValues="UPDATED_NEW"
-    )
+    if not decision and len(reviewers) >= 3:
+        response = table.delete_item(
+            Key={
+                'Acronym': acronym
+            }
+        )
+    else:
+        response = table.update_item(
+            Key={
+                'Acronym': acronym
+            },
+            UpdateExpression=f"set {decisionStr}=:d",
+            ExpressionAttributeValues={
+                ':d': reviewers,
+            },
+            ReturnValues="UPDATED_NEW"
+        )
 
     if len(reviewers) >= REVIEWERS_MAX:
         check_approval_status(acronym)
@@ -352,7 +389,7 @@ def checkAlreadyReviewed(result, userId):
 
     return userId in approvers or userId in denyers
 
-    
+
 def check_hash(event):
   slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
   body = get_body(event)

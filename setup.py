@@ -9,7 +9,7 @@ setuptools.setup(
     name="explain_slack_bot",
     version="0.0.1",
 
-    description="Explain is a system for definining common terms from within slack. You can also add new definitions.",
+    description="Explain is a system for defining common terms from within slack. You can also add new definitions.",
     long_description=long_description,
     long_description_content_type="text/markdown",
 
