@@ -26,7 +26,7 @@ APPROVAL_STR = 'Approval'
 APPROVAL_STATUS_PENDING = 'pending'
 APPROVAL_STATUS_APPROVED = 'approved'
 APPROVAL_STATUS_DENIED = 'denied'
-REVIEWERS_MAX_NUMBER = 3
+REVIEWERS_MAX = 3
 
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
@@ -194,11 +194,11 @@ def check_approval_status(acronym):
     deniers = item.get(DENIERS_STR, [])
     requester_id = item.get(REQUESTER_STR)
 
-    if len(approvers) >= REVIEWERS_MAX_NUMBER:
+    if len(approvers) >= REVIEWERS_MAX:
         approved = True
         approval_status = APPROVAL_STATUS_APPROVED
     else:
-        if len(deniers) >= REVIEWERS_MAX_NUMBER:
+        if len(deniers) >= REVIEWERS_MAX:
             approved = False
             approval_status = APPROVAL_STATUS_DENIED
         else:
@@ -339,7 +339,7 @@ def persistDecision(acronym, userId, decision):
         ReturnValues="UPDATED_NEW"
     )
 
-    if len(reviewers) >= REVIEWERS_MAX_NUMBER:
+    if len(reviewers) >= REVIEWERS_MAX:
         check_approval_status(acronym)
 
     return {
