@@ -248,6 +248,10 @@ def persistDecision(acronym, userId, decision):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
     
     decisionStr = APPROVERS_STR if decision else DENIERS_STR
+
+    if len(result['Items']) == 0:
+        return {"statusCode": 404}
+    
     reviewers = result['Items'][0].get(decisionStr, [])
 
     if checkAlreadyReviewed(result, userId):
