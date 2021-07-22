@@ -351,7 +351,7 @@ def persistDecision(acronym, userId, decision):
             response = update_reviewers(acronym,reviewers,decisionStr)
 
     if len(reviewers) >= REVIEWERS_MAX:
-        notify_approval_response(acronym,approved,requester_id)
+        notify_approval_response(acronym,decision,requester_id)
 
     return {
         "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
