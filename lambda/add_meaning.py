@@ -25,7 +25,6 @@ REQUESTER_STR = 'Requester'
 APPROVAL_STR = 'Approval'
 APPROVAL_STATUS_PENDING = 'pending'
 APPROVAL_STATUS_APPROVED = 'approved'
-APPROVAL_STATUS_DENIED = 'denied'
 REVIEWERS_MAX = 3
 
 table = dynamodb.Table(TABLE_NAME)
@@ -196,24 +195,24 @@ def check_approval_status(acronym):
 
     if len(approvers) >= REVIEWERS_MAX:
         approved = True
-        approval_status = APPROVAL_STATUS_APPROVED
+        # Update approval status
+        response = table.update_item(
+            Key={
+                'Acronym': acronym
+            },
+            UpdateExpression=f"set {APPROVAL_STR}=:d",
+            ExpressionAttributeValues={
+                ':d': APPROVAL_STATUS_APPROVED,
+            },
+            ReturnValues="UPDATED_NEW"
+        )
+        print("response: " + str(response))
     else:
         if len(deniers) >= REVIEWERS_MAX:
             approved = False
-            approval_status = APPROVAL_STATUS_DENIED
+            # TODO: Remove item from DB
         else:
             return
-
-    response = table.update_item(
-        Key={
-            'Acronym': acronym
-        },
-        UpdateExpression=f"set {APPROVAL_STR}=:d",
-        ExpressionAttributeValues={
-            ':d': approval_status,
-        },
-        ReturnValues="UPDATED_NEW"
-    )
 
     notify_approval_response(acronym,approved,requester_id)
 
@@ -323,7 +322,7 @@ def persistDecision(acronym, userId, decision):
     reviewers = result['Items'][0].get(decisionStr, [])
     approval_status = result['Items'][0].get(APPROVAL_STR)
 
-    if checkAlreadyReviewed(result, userId) or approval_status == APPROVAL_STATUS_APPROVED or approval_status == APPROVAL_STATUS_DENIED:
+    if checkAlreadyReviewed(result, userId) or approval_status == APPROVAL_STATUS_APPROVED:
         return {"statusCode": 400}
     
     reviewers.append(userId)
