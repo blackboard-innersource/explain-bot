@@ -221,9 +221,9 @@ def notify_approval_response(acronym, approved, requester_id):
     print("Sending approval response...")
 
     if approved == True:
-        message = "Your submission for *" + acronym + "* was approved. Thanks for contributing!"
+        message = f"Your submission for *{acronym}* was approved. Thanks for contributing!"
     else:
-        message = "Sorry, your submission for *" + acronym + "* was denied."
+        message = f"Sorry, your submission for *{acronym}* was denied."
 
     body = {
         "channel": requester_id,
