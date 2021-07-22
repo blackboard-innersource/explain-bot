@@ -21,6 +21,12 @@ OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
 APPROVERS = os.environ['APPROVERS'].split(',')
 APPROVERS_STR = 'Approvers'
 DENIERS_STR = 'Deniers'
+REQUESTER_STR = 'Requester'
+APPROVAL_STR = 'Approval'
+APPROVAL_STATUS_PENDING = 'pending'
+APPROVAL_STATUS_APPROVED = 'approved'
+APPROVAL_STATUS_DENIED = 'denied'
+REVIEWERS_MAX_NUMBER = 3
 
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
@@ -44,14 +50,16 @@ def explain(acronym):
     return retval
     
 @lru_cache(maxsize=60)
-def define(acronym, definition, meaning, notes, response_url):
+def define(acronym, definition, meaning, notes, response_url, user_id):
     
     results = table.put_item(
         Item={
             'Acronym': acronym,
             'Definition': definition,
             'Meaning': meaning,
-            'Notes': notes
+            'Notes': notes,
+            REQUESTER_STR: user_id,
+            APPROVAL_STR: APPROVAL_STATUS_PENDING
         }
     )
 
@@ -177,6 +185,70 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
         else:
             print("Skip approver due to approver sent acronym request")
 
+
+def check_approval_status(acronym):
+    result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+    item = result['Items'][0]
+
+    approvers = item.get(APPROVERS_STR, [])
+    deniers = item.get(DENIERS_STR, [])
+    requester_id = item.get(REQUESTER_STR)
+
+    if len(approvers) >= REVIEWERS_MAX_NUMBER:
+        approved = True
+        approval_status = APPROVAL_STATUS_APPROVED
+    else:
+        if len(deniers) >= REVIEWERS_MAX_NUMBER:
+            approved = False
+            approval_status = APPROVAL_STATUS_DENIED
+        else:
+            return
+
+    response = table.update_item(
+        Key={
+            'Acronym': acronym
+        },
+        UpdateExpression=f"set {APPROVAL_STR}=:d",
+        ExpressionAttributeValues={
+            ':d': approval_status,
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+
+    notify_approval_response(acronym,approved,requester_id)
+
+
+def notify_approval_response(acronym, approved, requester_id):
+    print("Sending approval response...")
+
+    if approved == True:
+        message = "Your submission for *" + acronym + "* was approved. Thanks for contributing!"
+    else:
+        message = "Sorry, your submission for *" + acronym + "* was denied."
+
+    body = {
+        "channel": requester_id,
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": message
+                }
+            }
+        ]
+    }
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OAUTH_TOKEN
+    }
+    print("headers: " + str(headers))
+
+    response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
+    print("response: " + str(response.status) + " " + str(response.data))
+
+
 def lambda_handler(event, context):
     print("add_meaning: " + str(event))
     
@@ -237,7 +309,7 @@ def lambda_handler(event, context):
     # Define acronym (persist in DB) and send approval request to approvers
     return_url = payload['response_urls'][0]['response_url']
     
-    status_code = define(acronym,definition,meaning,notes,return_url)
+    status_code = define(acronym,definition,meaning,notes,return_url,user_id)
     create_approval_request(acronym,definition,meaning,team_domain,user_id,user_name)
     
     return {
@@ -249,8 +321,9 @@ def persistDecision(acronym, userId, decision):
     
     decisionStr = APPROVERS_STR if decision else DENIERS_STR
     reviewers = result['Items'][0].get(decisionStr, [])
+    approval_status = result['Items'][0].get(APPROVAL_STR)
 
-    if checkAlreadyReviewed(result, userId):
+    if checkAlreadyReviewed(result, userId) or approval_status == APPROVAL_STATUS_APPROVED or approval_status == APPROVAL_STATUS_DENIED:
         return {"statusCode": 400}
     
     reviewers.append(userId)
@@ -265,6 +338,9 @@ def persistDecision(acronym, userId, decision):
         },
         ReturnValues="UPDATED_NEW"
     )
+
+    if len(reviewers) >= REVIEWERS_MAX_NUMBER:
+        check_approval_status(acronym)
 
     return {
         "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
