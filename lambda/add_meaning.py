@@ -275,6 +275,10 @@ def persistDecision(acronym, userId, decision):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
 
     decisionStr = APPROVERS_STR if decision else DENIERS_STR
+
+    if len(result['Items']) == 0:
+        return {"statusCode": 404}
+    
     reviewers = result['Items'][0].get(decisionStr, [])
 
     if checkAlreadyReviewed(result, userId):
@@ -282,16 +286,23 @@ def persistDecision(acronym, userId, decision):
 
     reviewers.append(userId)
 
-    response = table.update_item(
-        Key={
-            'Acronym': acronym
-        },
-        UpdateExpression=f"set {decisionStr}=:d",
-        ExpressionAttributeValues={
-            ':d': reviewers,
-        },
-        ReturnValues="UPDATED_NEW"
-    )
+    if not decision and len(reviewers) >= 3:
+        response = table.delete_item(
+            Key={
+                'Acronym': acronym
+            }
+        )
+    else:
+        response = table.update_item(
+            Key={
+                'Acronym': acronym
+            },
+            UpdateExpression=f"set {decisionStr}=:d",
+            ExpressionAttributeValues={
+                ':d': reviewers,
+            },
+            ReturnValues="UPDATED_NEW"
+        )
 
     return {
         "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
