@@ -322,6 +322,7 @@ def persistDecision(acronym, userId, decision):
     reviewers = result['Items'][0].get(decisionStr, [])
     approval_status = result['Items'][0].get(APPROVAL_STR)
 
+    # TODO: Ignore approval action
     if checkAlreadyReviewed(result, userId) or approval_status == APPROVAL_STATUS_APPROVED:
         return {"statusCode": 400}
     
