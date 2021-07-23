@@ -94,25 +94,14 @@ def define(acronym, definition, meaning, notes, response_url):
 
     return result
 
-def create_approval_request(acronym, definition, meaning, team_domain, user_id, user_name):
-
-    user_name_capitalized = " ".join(user_name)
-    date_requested = date.today().strftime("%d/%m/%Y")
-
-    if meaning is None:
-        meaning = "-"
-
-    for approver in APPROVERS:
-        if approver != user_id:
-
-            #Send approval request
-            modal={
+def get_approval_form(acronym, definition, meaning, team_domain, user_id, user_name, date_requested, approver, ts, update):
+    return {
                 "blocks": [
                     {
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "*You have a new request:*\n<https://" + team_domain + ".slack.com/team/" + user_id + "|" + user_name_capitalized + " - New acronym request>"
+                            "text": "*You have a new request:*\n<https://" + team_domain + ".slack.com/team/" + user_id + "|" + user_name + " - New acronym request>"
                         }
                     },
                     {
@@ -160,10 +149,35 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
                                 "value": "Deny"
                             }
                         ]
+                    } if update == False else 
+                    {
+                        "type": "divider"
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": ":white_check_mark: *Your choice has been saved successfully!*"
+                        }
                     }
                 ],
-                "channel": approver
+                "channel": approver,
+                "ts": ts if update == True else None
             }
+
+def create_approval_request(acronym, definition, meaning, team_domain, user_id, user_name):
+
+    user_name_capitalized = " ".join(user_name)
+    date_requested = date.today().strftime("%d/%m/%Y")
+
+    if meaning is "":
+        meaning = "-"
+
+    for approver in APPROVERS:
+        if approver != user_id:
+
+            #Send approval request
+            modal = get_approval_form(acronym, definition, meaning, team_domain, user_id, user_name_capitalized, date_requested, approver, None, False)
 
             headers = {
                 'Content-Type': 'application/json',
@@ -202,6 +216,56 @@ def notify_pending_approval(user_id, acronym):
     response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
     print("response: " + str(response.status) + " " + str(response.data))
 
+def get_data_from_payload(payload,actions):
+    acronym = ""
+    definition = ""
+    meaning = ""
+    notes = ""
+    team_domain = ""
+    user_name = ""
+    user_id = ""
+    
+
+    if actions is None:
+        # Obtain the data from submit payload structure
+        acronym = payload['view']['state']['values']['acronym_block']['acronym_input']['value']
+        definition = payload['view']['state']['values']['definition_block']['definition_input']['value']
+        meaning = payload['view']['state']['values']['meaning_block']['meaning_input']['value']
+        notes = payload['view']['state']['values']['notes_block']['notes_input']['value']
+        team_domain = payload['team']['domain']
+        user_name = [word.capitalize() for word in payload['user']['name'].split(".") ]
+        user_id = payload['user']['id']
+    else:
+        # Obtain the data from approve/deny payload structure
+        acronym = payload['message']['blocks'][1]['fields'][0]['text'][12:]
+        definition = payload['message']['blocks'][1]['fields'][2]['text'][13:]
+        meaning = payload['message']['blocks'][1]['fields'][3]['text'][11:]
+        team_domain = payload['team']['domain']
+        user_name_block = payload['message']['blocks'][0]['text']['text']
+        user_name = user_name_block[user_name_block.index("|") + 1:user_name_block.index(" - New acronym request")]
+        user_id = user_name_block[user_name_block.index("/team/") + 6:user_name_block.index("|")]
+
+    print("acronym: " + acronym)
+    print("definition: " + definition)
+    
+    if meaning is not None:
+        print("meaning: " + meaning)
+    else:
+        print("no meaning")
+        meaning = ""
+
+    if notes is not None:
+        print("notes: " + notes)
+    else:
+        print("no notes")
+        notes = "" 
+
+    print("team_domain: " + team_domain)
+    print("user_name: " + " ".join(user_name))
+    print('user id:' + user_id)
+    
+    return acronym, definition, meaning, notes, team_domain, user_name, user_id
+
 
 def lambda_handler(event, context):
     print("add_meaning: " + str(event))
@@ -215,50 +279,33 @@ def lambda_handler(event, context):
     print("Body: " + str(body))
     
     payload = json.loads(body.get('payload',"no-payload"))
-    print("Payload: " + str(payload) )
-
-    user_id = payload['user']['id']
-    print('user id:' + user_id)
+    print("Payload: " + str(payload))
 
     actions = payload.get('actions')
-    if actions is not None:
-        # Obtain acronim from payload structure, if a new action is added
-        # this should be refactored to avoid an error
-        acronym = payload['message']['blocks'][1]['fields'][0]['text'][12:]
-        value = actions[0]['value']
-        if value == 'Approve':
-            return persistDecision(acronym, user_id, True)
-        if value == 'Deny':
-            return persistDecision(acronym, user_id, False)
+    print("Actions: " + str(actions))
 
     # Obtain required data
-    acronym = payload['view']['state']['values']['acronym_block']['acronym_input']['value']
-    print("acronym: " + acronym)
+    acronym, definition, meaning, notes, team_domain, user_name, user_id = get_data_from_payload(payload,actions)
 
-    definition = payload['view']['state']['values']['definition_block']['definition_input']['value']
-    print("definition: " + definition)
-    
-    meaning = payload['view']['state']['values']['meaning_block']['meaning_input']['value']
-        
-    if meaning is not None:
-        print("meaning: " + meaning)
-    else:
-        print("no meaning")
-        meaning = ""
-    
-    notes = payload['view']['state']['values']['notes_block']['notes_input']['value']
-    
-    if notes is not None:
-        print("notes: " + notes)
-    else:
-        print("no notes")
-        notes = ""
+    # Check which action was sent
+    if actions is not None:
+        # Obtain the date when acronym was requested
+        date_requested = payload['message']['blocks'][1]['fields'][1]['text'][20:]
 
-    team_domain = payload['team']['domain']
-    print("team_domain: " + team_domain)
+        # Obtain the channel id i.e approver id
+        channel = payload['channel']['id']
 
-    user_name = [word.capitalize() for word in payload['user']['name'].split(".") ]
-    print("user_name: " + " ".join(user_name))
+        # Obtain the message's timestamp to be updated
+        message_ts = payload['message']['ts']
+
+        value = actions[0]['value']
+
+        if value == 'Approve':
+            update_approval_form(acronym,definition,meaning,team_domain,user_id,user_name,date_requested,channel,True,message_ts)
+            return persistDecision(acronym, user_id, True)
+        if value == 'Deny':
+            update_approval_form(acronym,definition,meaning,team_domain,user_id,user_name,date_requested,channel,False,message_ts)
+            return persistDecision(acronym, user_id, False)
 
     # Define acronym (persist in DB) and send approval request to approvers
     return_url = payload['response_urls'][0]['response_url']
@@ -270,6 +317,24 @@ def lambda_handler(event, context):
     return {
         "statusCode" : status_code
     }
+
+def update_approval_form(acronym, definition, meaning, team_domain, user_id, user_name, date_requested, channel, decision, message_ts):
+
+    if meaning is "":
+        meaning = "-"
+
+    #Update approval message form
+    modal = get_approval_form(acronym, definition, meaning, team_domain, user_id, user_name, date_requested, channel, message_ts, True)
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OAUTH_TOKEN
+    }
+    print("headers: " + str(headers))
+
+    response = http.request('POST', 'https://slack.com/api/chat.update', body=json.dumps(modal), headers=headers)
+    print("response: " + str(response.status) + " " + str(response.data))
+    
 
 def persistDecision(acronym, userId, decision):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
