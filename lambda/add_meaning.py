@@ -21,6 +21,11 @@ OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
 APPROVERS = os.environ['APPROVERS'].split(',')
 APPROVERS_STR = 'Approvers'
 DENIERS_STR = 'Deniers'
+REQUESTER_STR = 'Requester'
+APPROVAL_STR = 'Approval'
+APPROVAL_STATUS_PENDING = 'pending'
+APPROVAL_STATUS_APPROVED = 'approved'
+REVIEWERS_MAX = 3
 
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
@@ -44,14 +49,16 @@ def explain(acronym):
     return retval
     
 @lru_cache(maxsize=60)
-def define(acronym, definition, meaning, notes, response_url):
+def define(acronym, definition, meaning, notes, response_url, user_id):
     
     results = table.put_item(
         Item={
             'Acronym': acronym,
             'Definition': definition,
             'Meaning': meaning,
-            'Notes': notes
+            'Notes': notes,
+            REQUESTER_STR: user_id,
+            APPROVAL_STR: APPROVAL_STATUS_PENDING
         }
     )
 
@@ -178,6 +185,37 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
             print("Skip approver due to approver sent acronym request")
 
 
+def notify_approval_response(acronym, approved, requester_id):
+    print("Sending approval response...")
+
+    if approved == True:
+        message = f"Your submission for *{acronym}* was approved. Thanks for contributing!"
+    else:
+        message = f"Sorry, your submission for *{acronym}* was denied."
+
+    body = {
+        "channel": requester_id,
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": message
+                }
+            }
+        ]
+    }
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OAUTH_TOKEN
+    }
+    print("headers: " + str(headers))
+
+    response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
+    print("response: " + str(response.status) + " " + str(response.data))
+
+
 def notify_pending_approval(user_id, acronym):
     print("Sending pending approval notification...")
     body = {
@@ -263,7 +301,7 @@ def lambda_handler(event, context):
     # Define acronym (persist in DB) and send approval request to approvers
     return_url = payload['response_urls'][0]['response_url']
     
-    status_code = define(acronym,definition,meaning,notes,return_url)
+    status_code = define(acronym,definition,meaning,notes,return_url,user_id)
     create_approval_request(acronym,definition,meaning,team_domain,user_id,user_name)
     notify_pending_approval(user_id,acronym)
     
@@ -273,40 +311,67 @@ def lambda_handler(event, context):
 
 def persistDecision(acronym, userId, decision):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+    item = result['Items'][0]
 
     decisionStr = APPROVERS_STR if decision else DENIERS_STR
 
     if len(result['Items']) == 0:
         return {"statusCode": 404}
     
-    reviewers = result['Items'][0].get(decisionStr, [])
+    reviewers = item.get(decisionStr, [])
+    approval_status = item.get(APPROVAL_STR)
+    requester_id = item.get(REQUESTER_STR)
 
-    if checkAlreadyReviewed(result, userId):
+    # TODO: Ignore approval action
+    if checkAlreadyReviewed(result, userId) or approval_status == APPROVAL_STATUS_APPROVED:
         return {"statusCode": 400}
 
     reviewers.append(userId)
 
-    if not decision and len(reviewers) >= 3:
-        response = table.delete_item(
-            Key={
-                'Acronym': acronym
-            }
-        )
-    else:
-        response = table.update_item(
+    if decision and len(reviewers) >= REVIEWERS_MAX:
+        table.update_item(
             Key={
                 'Acronym': acronym
             },
-            UpdateExpression=f"set {decisionStr}=:d",
+            UpdateExpression=f"set {APPROVAL_STR}=:d",
             ExpressionAttributeValues={
-                ':d': reviewers,
+                ':d': APPROVAL_STATUS_APPROVED,
             },
             ReturnValues="UPDATED_NEW"
         )
+        response = update_reviewers(acronym,reviewers,decisionStr)
+    else:
+        if not decision and len(reviewers) >= REVIEWERS_MAX:
+            response = table.delete_item(
+                Key={
+                    'Acronym': acronym
+                }
+            )
+        else:
+            response = update_reviewers(acronym,reviewers,decisionStr)
+
+    if len(reviewers) >= REVIEWERS_MAX:
+        notify_approval_response(acronym,decision,requester_id)
 
     return {
         "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
     }
+
+
+def update_reviewers(acronym,reviewers,decisionStr):
+    response = table.update_item(
+        Key={
+            'Acronym': acronym
+        },
+        UpdateExpression=f"set {decisionStr}=:d",
+        ExpressionAttributeValues={
+            ':d': reviewers,
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+
+    return response
+
 
 def checkAlreadyReviewed(result, userId):
     approvers = result['Items'][0].get(APPROVERS_STR, [])
