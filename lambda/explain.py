@@ -35,7 +35,7 @@ def explain(acronym):
 
         approval = item.get(APPROVAL_STR)
         if approval == None or approval == APPROVAL_STATUS_APPROVED:
-            return item['Acronym'] + " - " + item['Definition'] + "\n---\n*Meaning*: " + item['Meaning'] +  "\n*Notes*: " + item['Notes']
+            return f'{item["Acronym"]} - {item["Definition"]}\n---\n*Meaning*: {item["Meaning"]}\n*Notes*: {item["Notes"]}' 
         
     return f'{acronym} is not defined.'
 
