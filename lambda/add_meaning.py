@@ -181,7 +181,7 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
         meaning = "-"
 
     for approver in APPROVERS:
-        if approver != user_id or approver == user_id:
+        if approver != user_id:
 
             #Send approval request
             modal = get_approval_form(acronym, definition, meaning, team_domain, user_id, user_name_capitalized, date_requested, approver, None, False)
