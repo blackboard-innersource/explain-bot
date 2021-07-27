@@ -133,6 +133,9 @@ def get_approval_form(acronym, definition, meaning, team_domain, user_id, user_n
                         ]
                     },
                     {
+                        "type": "divider"
+                    },
+                    {
                         "type": "actions",
                         "elements": [
                             {
@@ -158,13 +161,10 @@ def get_approval_form(acronym, definition, meaning, team_domain, user_id, user_n
                         ]
                     } if update == False else 
                     {
-                        "type": "divider"
-                    },
-                    {
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": ":white_check_mark: *Your choice has been saved successfully!*"
+                            "text": ":white_check_mark: *Your choice has been saved successfully!*\n"
                         }
                     }
                 ],
@@ -181,7 +181,7 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
         meaning = "-"
 
     for approver in APPROVERS:
-        if approver != user_id:
+        if approver != user_id or approver == user_id:
 
             #Send approval request
             modal = get_approval_form(acronym, definition, meaning, team_domain, user_id, user_name_capitalized, date_requested, approver, None, False)
@@ -276,7 +276,7 @@ def get_data_from_payload(payload,actions):
     else:
         # Obtain the data from approve/deny payload structure
         acronym = payload['message']['blocks'][1]['fields'][0]['text'][12:]
-        definition = payload['message']['blocks'][1]['fields'][2]['text'][13:]
+        definition = payload['message']['blocks'][1]['fields'][2]['text'][11:]
         meaning = payload['message']['blocks'][1]['fields'][3]['text'][11:]
         team_domain = payload['team']['domain']
         user_name_block = payload['message']['blocks'][0]['text']['text']
@@ -328,7 +328,8 @@ def lambda_handler(event, context):
     # Check which action was sent
     if actions is not None:
         # Obtain the date when acronym was requested
-        date_requested = payload['message']['blocks'][1]['fields'][1]['text'][20:]
+        print("Submitted: " + str(payload['message']['blocks'][1]['fields'][1]['text']))
+        date_requested = payload['message']['blocks'][1]['fields'][1]['text'][18:]
 
         # Obtain the channel id i.e approver id
         channel = payload['channel']['id']
