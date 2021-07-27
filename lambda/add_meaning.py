@@ -266,7 +266,7 @@ def notify_pending_approval(user_id, acronym):
     response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
     print("response: " + str(response.status) + " " + str(response.data))
 
-def get_data_from_payload(payload,actions):
+def get_data_from_payload(payload):
     acronym = ""
     definition = ""
     meaning = ""
@@ -275,6 +275,7 @@ def get_data_from_payload(payload,actions):
     user_name = ""
     user_id = ""
     
+    actions = payload.get('actions')
 
     if actions is None:
         # Obtain the data from submit payload structure
@@ -336,7 +337,7 @@ def lambda_handler(event, context):
     print("Actions: " + str(actions))
 
     # Obtain required data
-    acronym, definition, meaning, notes, team_domain, user_name, user_id = get_data_from_payload(payload,actions)
+    acronym, definition, meaning, notes, team_domain, user_name, user_id = get_data_from_payload(payload)
 
     # Check which action was sent
     if actions is not None:
