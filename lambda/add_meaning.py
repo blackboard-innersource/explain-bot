@@ -351,14 +351,17 @@ def lambda_handler(event, context):
         # Obtain the message's timestamp to be updated
         message_ts = payload['message']['ts']
 
+        # Obtain the appover id
+        approver_id = payload['user']['id']
+
         value = actions[0]['value']
 
         if value == 'Approve':
             update_approval_form(acronym,definition,meaning,notes,team_domain,user_id,user_name,date_requested,channel,True,message_ts)
-            return persistDecision(acronym, user_id, True)
+            return persistDecision(acronym, approver_id, True)
         if value == 'Deny':
             update_approval_form(acronym,definition,meaning,notes,team_domain,user_id,user_name,date_requested,channel,False,message_ts)
-            return persistDecision(acronym, user_id, False)
+            return persistDecision(acronym, approver_id, False)
 
     # Define acronym (persist in DB) and send approval request to approvers
     return_url = payload['response_urls'][0]['response_url']
@@ -371,10 +374,8 @@ def lambda_handler(event, context):
         "statusCode" : status_code
     }
 
-def update_form_closed(acronym):
-    results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+def update_form_closed(item):
     try:
-        item = results['Items'][0]
         approvers_message_list = item['ApproverMessages']
 
         for item in approvers_message_list:
@@ -423,13 +424,13 @@ def update_approval_form(acronym, definition, meaning, notes, team_domain, user_
 
 def persistDecision(acronym, userId, decision):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
-    item = result['Items'][0]
-
-    decisionStr = APPROVERS_STR if decision else DENIERS_STR
 
     if len(result['Items']) == 0:
         return {"statusCode": 404}
-    
+
+    item = result['Items'][0]
+
+    decisionStr = APPROVERS_STR if decision else DENIERS_STR
     reviewers = item.get(decisionStr, [])
     approval_status = item.get(APPROVAL_STR)
     requester_id = item.get(REQUESTER_STR)
@@ -452,7 +453,7 @@ def persistDecision(acronym, userId, decision):
             ReturnValues="UPDATED_NEW"
         )
         response = update_reviewers(acronym,reviewers,decisionStr)
-        update_form_closed(acronym)
+        update_form_closed(item)
     else:
         if not decision and len(reviewers) >= REVIEWERS_MAX:
             response = table.delete_item(
@@ -460,7 +461,7 @@ def persistDecision(acronym, userId, decision):
                     'Acronym': acronym
                 }
             )
-            update_form_closed(acronym)
+            update_form_closed(item)
         else:
             response = update_reviewers(acronym,reviewers,decisionStr)
 
