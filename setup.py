@@ -19,13 +19,16 @@ setuptools.setup(
     packages=setuptools.find_packages(where="explain_slack_bot"),
 
     install_requires=[
-        "aws-cdk.core==1.96.0",
+        "aws-cdk.core==1.115.0",
         "aws-cdk.aws-lambda",
         "aws-cdk.aws_apigateway",
         "aws-cdk.aws-apigatewayv2",
         "aws-cdk.aws-apigatewayv2-integrations",
+        "aws-cdk.aws-codepipeline",
+        "aws-cdk.aws-codepipeline-actions",
         "aws-cdk.aws-dynamodb",
-        "aws-cdk.custom-resources"
+        "aws-cdk.custom-resources",
+        "aws-cdk.pipelines"
     ],
 
     python_requires=">=3.6",

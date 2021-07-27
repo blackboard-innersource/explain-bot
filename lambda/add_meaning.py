@@ -195,9 +195,28 @@ def create_approval_request(acronym, definition, meaning, team_domain, user_id, 
             response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(modal), headers=headers)
             print("response: " + str(response.status) + " " + str(response.data))
 
+            data = json.loads(response.data.decode('utf-8'))
+
+            if data.get('ok'):
+                message_data = {
+                    'channel': data.get('channel'),
+                    'ts': data.get('ts')
+                }
+                approver_messages.append(message_data)
+
         else:
             print("Skip approver due to approver sent acronym request")
 
+    table.update_item(
+        Key={
+            'Acronym': acronym
+        },
+        UpdateExpression=f"set ApproverMessages=:a",
+        ExpressionAttributeValues={
+            ':a': approver_messages,
+        },
+        ReturnValues="UPDATED_NEW"
+    )
 
 def notify_approval_response(acronym, approved, requester_id):
     print("Sending approval response...")
