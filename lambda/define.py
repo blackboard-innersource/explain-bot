@@ -27,7 +27,7 @@ def get_body(event):
     return base64.b64decode(str(event['body'])).decode('ascii')
 
 @lru_cache(maxsize=60)
-def explain(acronym):
+def define(acronym):
 
     results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
 
@@ -205,10 +205,10 @@ def lambda_handler(event, context):
     elif (len(text) == 1):
         acronym = text[0].upper()
         
-        response = explain(acronym)
+        response = define(acronym)
 
     else:
-        response = f'Usage: /explain <acronym> or /explain <acronym> <definition>'
+        response = f'Usage: /define <acronym> or /define <acronym> <definition>'
 
     # logging
     print (str(command) + ' ' + str(text) +' -> '+ str(response) + ',original: '+ str(msg_map))

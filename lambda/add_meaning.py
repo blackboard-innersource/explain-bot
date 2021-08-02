@@ -1,16 +1,15 @@
-import json
-from urllib import parse as urlparse
 import base64
-from functools import lru_cache
-import math
-import hmac
 import hashlib
+import hmac
+import json
 import os
-import boto3
-from botocore.exceptions import ClientError
-from boto3.dynamodb.conditions import Key
-import urllib3
 from datetime import date
+from functools import lru_cache
+from urllib import parse as urlparse
+
+import boto3
+import urllib3
+from boto3.dynamodb.conditions import Key
 
 # Get the service resource.
 dynamodb = boto3.resource('dynamodb')
@@ -29,7 +28,7 @@ def get_body(event):
     return base64.b64decode(str(event['body'])).decode('ascii')
 
 @lru_cache(maxsize=60)
-def explain(acronym):
+def define(acronym):
 
     results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
 
@@ -44,7 +43,7 @@ def explain(acronym):
     return retval
     
 @lru_cache(maxsize=60)
-def define(acronym, definition, meaning, notes, response_url):
+def add_definition(acronym, definition, meaning, notes, response_url):
     
     results = table.put_item(
         Item={
@@ -74,7 +73,7 @@ def define(acronym, definition, meaning, notes, response_url):
             "text": acronym + ' successfully defined.',
             "attachments": [
                 {
-                    "text": explain(acronym)
+                    "text": define(acronym)
                 }
             ]
         }
@@ -237,7 +236,7 @@ def lambda_handler(event, context):
     # Define acronym (persist in DB) and send approval request to approvers
     return_url = payload['response_urls'][0]['response_url']
     
-    status_code = define(acronym,definition,meaning,notes,return_url)
+    status_code = add_definition(acronym,definition,meaning,notes,return_url)
     create_approval_request(acronym,definition,meaning,team_domain,user_id,user_name)
     
     return {
