@@ -1,7 +1,6 @@
 import json
 from urllib import parse as urlparse
 import base64
-from functools import lru_cache
 import math
 import hmac
 import hashlib
@@ -18,6 +17,8 @@ dynamodb = boto3.resource('dynamodb')
 # set environment variable
 TABLE_NAME = os.environ['TABLE_NAME']
 OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
+APPROVAL_STR = 'Approval'
+APPROVAL_STATUS_APPROVED = 'approved'
 
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
@@ -26,20 +27,17 @@ http = urllib3.PoolManager()
 def get_body(event):
     return base64.b64decode(str(event['body'])).decode('ascii')
 
-@lru_cache(maxsize=60)
 def define(acronym):
-
     results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
 
-    try:
+    if len(results['Items']) > 0:
         item = results['Items'][0]
-        
-        retval = item['Acronym'] + " - " + item['Definition'] + "\n---\n*Meaning*: " + item['Meaning'] +  "\n*Notes*: " + item['Notes']
-        
-    except:
-        retval = f'{acronym} is not defined.'
 
-    return retval
+        approval = item.get(APPROVAL_STR)
+        if approval == None or approval == APPROVAL_STATUS_APPROVED:
+            return f'{item["Acronym"]} - {item["Definition"]}\n---\n*Meaning*: {item["Meaning"]}\n*Notes*: {item["Notes"]}'
+        
+    return f'{acronym} is not defined.'
 
 def create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_id):
 

@@ -9,7 +9,7 @@ setuptools.setup(
     name="explain_slack_bot",
     version="0.0.1",
 
-    description="Explain is a system for definining common terms from within slack. You can also add new definitions.",
+    description="Explain is a system for defining common terms from within slack. You can also add new definitions.",
     long_description=long_description,
     long_description_content_type="text/markdown",
 
@@ -19,13 +19,16 @@ setuptools.setup(
     packages=setuptools.find_packages(where="explain_slack_bot"),
 
     install_requires=[
-        "aws-cdk.core==1.96.0",
+        "aws-cdk.core==1.115.0",
         "aws-cdk.aws-lambda",
         "aws-cdk.aws_apigateway",
         "aws-cdk.aws-apigatewayv2",
         "aws-cdk.aws-apigatewayv2-integrations",
+        "aws-cdk.aws-codepipeline",
+        "aws-cdk.aws-codepipeline-actions",
         "aws-cdk.aws-dynamodb",
-        "aws-cdk.custom-resources"
+        "aws-cdk.custom-resources",
+        "aws-cdk.pipelines"
     ],
 
     python_requires=">=3.6",
