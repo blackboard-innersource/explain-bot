@@ -88,76 +88,81 @@ def define(acronym, definition, meaning, notes, response_url, user_id):
 
 def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, approver, ts, update):
     return {
-                "blocks": [
+                "attachments": [
                     {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "*You have a new request:*\n<https://" + team_domain + ".slack.com/team/" + user_id + "|" + user_name + " - New acronym request>"
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "fields": [
+                        "color": "#000000",
+                        "blocks": [
                             {
-                                "type": "mrkdwn",
-                                "text": "*Acronym:*\n " + acronym
+                                "type": "section",
+                                "text": {
+                                    "type": "mrkdwn",
+                                    "text": "*You have a new request:*\n<https://" + team_domain + ".slack.com/team/" + user_id + "|" + user_name + " - New acronym request>"
+                                }
                             },
                             {
-                                "type": "mrkdwn",
-                                "text": "*When:*\nSubmitted " + date_requested
+                                "type": "section",
+                                "fields": [
+                                    {
+                                        "type": "mrkdwn",
+                                        "text": "*Acronym:*\n " + acronym
+                                    },
+                                    {
+                                        "type": "mrkdwn",
+                                        "text": "*When:*\nSubmitted " + date_requested
+                                    },
+                                    {
+                                        "type": "mrkdwn",
+                                        "text": "*Definition:*\n" + definition
+                                    },
+                                    {
+                                        "type": "mrkdwn",
+                                        "text": "*Meaning:*\n" + meaning
+                                    }
+                                ]
                             },
                             {
-                                "type": "mrkdwn",
-                                "text": "*Definition:*\n" + definition
+                                "type": "section",
+                                "text": {
+                                    "type": "mrkdwn",
+                                    "text": "*Notes:*\n" + notes
+                                }
                             },
                             {
-                                "type": "mrkdwn",
-                                "text": "*Meaning:*\n" + meaning
+                                "type": "divider"
+                            },
+                            {
+                                "type": "actions",
+                                "elements": [
+                                    {
+                                        "type": "button",
+                                        "text": {
+                                            "type": "plain_text",
+                                            "emoji": True,
+                                            "text": "Approve"
+                                        },
+                                        "style": "primary",
+                                        "value": "Approve"
+                                    },
+                                    {
+                                        "type": "button",
+                                        "text": {
+                                            "type": "plain_text",
+                                            "emoji": True,
+                                            "text": "Deny"
+                                        },
+                                        "style": "danger",
+                                        "value": "Deny"
+                                    }
+                                ]
+                            } if update == False else 
+                            {
+                                "type": "section",
+                                "text": {
+                                    "type": "mrkdwn",
+                                    "text": ":white_check_mark: *Your choice has been saved successfully!*\n"
+                                }
                             }
                         ]
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "*Notes:*\n" + notes
-                        }
-                    },
-                    {
-                        "type": "divider"
-                    },
-                    {
-                        "type": "actions",
-                        "elements": [
-                            {
-                                "type": "button",
-                                "text": {
-                                    "type": "plain_text",
-                                    "emoji": True,
-                                    "text": "Approve"
-                                },
-                                "style": "primary",
-                                "value": "Approve"
-                            },
-                            {
-                                "type": "button",
-                                "text": {
-                                    "type": "plain_text",
-                                    "emoji": True,
-                                    "text": "Deny"
-                                },
-                                "style": "danger",
-                                "value": "Deny"
-                            }
-                        ]
-                    } if update == False else 
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": ":white_check_mark: *Your choice has been saved successfully!*\n"
-                        }
                     }
                 ],
                 "channel": approver,
@@ -174,7 +179,7 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
         meaning = "-"
 
     for approver in APPROVERS:
-        if approver != user_id:
+        if approver != user_id or approver == user_id:
 
             #Send approval request
             modal = get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name_capitalized, date_requested, approver, None, False)
@@ -288,12 +293,12 @@ def get_data_from_payload(payload):
         user_id = payload['user']['id']
     else:
         # Obtain the data from approve/deny payload structure
-        acronym = payload['message']['blocks'][1]['fields'][0]['text'][12:]
-        definition = payload['message']['blocks'][1]['fields'][2]['text'][14:]
-        meaning = payload['message']['blocks'][1]['fields'][3]['text'][11:]
-        notes = payload['message']['blocks'][2]['text']['text'][9:]
+        acronym = payload['message']['attachments'][0]['blocks'][1]['fields'][0]['text'][12:]
+        definition = payload['message']['attachments'][0]['blocks'][1]['fields'][2]['text'][14:]
+        meaning = payload['message']['attachments'][0]['blocks'][1]['fields'][3]['text'][11:]
+        notes = payload['message']['attachments'][0]['blocks'][2]['text']['text'][9:]
         team_domain = payload['team']['domain']
-        user_name_block = payload['message']['blocks'][0]['text']['text']
+        user_name_block = payload['message']['attachments'][0]['blocks'][0]['text']['text']
         user_name = user_name_block[user_name_block.index("|") + 1:user_name_block.index(" - New acronym request")]
         user_id = user_name_block[user_name_block.index("/team/") + 6:user_name_block.index("|")]
 
@@ -342,8 +347,8 @@ def lambda_handler(event, context):
     # Check which action was sent
     if actions is not None:
         # Obtain the date when acronym was requested
-        print("Submitted: " + str(payload['message']['blocks'][1]['fields'][1]['text']))
-        date_requested = payload['message']['blocks'][1]['fields'][1]['text'][18:]
+        print("Submitted: " + str(payload['message']['attachments'][0]['blocks'][1]['fields'][1]['text']))
+        date_requested = payload['message']['attachments'][0]['blocks'][1]['fields'][1]['text'][18:]
 
         # Obtain the channel id i.e approver id
         channel = payload['channel']['id']
@@ -378,19 +383,24 @@ def update_form_closed(item):
     try:
         approvers_message_list = item['ApproverMessages']
 
-        for item in approvers_message_list:
+        for element in approvers_message_list:
             modal = {
-                "blocks": [
+                "attachments": [
                     {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "*The request for: " + acronym + " is completed. Thanks for contributing, the voting is closed!*\n"
-                        }
+                        "color": "#000000",
+                        "blocks": [
+                            {
+                                "type": "section",
+                                "text": {
+                                    "type": "mrkdwn",
+                                    "text": "*The request for: " + item['Acronym'] + " is completed. Thanks for contributing, the voting is closed!*\n"
+                                }
+                            }
+                        ]
                     }
                 ],
-                "channel": item['channel'],
-                "ts": item['ts']
+                "channel": element['channel'],
+                "ts": element['ts']
             }
 
             headers = {
@@ -402,7 +412,7 @@ def update_form_closed(item):
             response = http.request('POST', 'https://slack.com/api/chat.update', body=json.dumps(modal), headers=headers)
             print("response: " + str(response.status) + " " + str(response.data))
     except:
-        print( "Error" )
+        print( "Error in update_form_closed" )
 
 def update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, channel, decision, message_ts):
 

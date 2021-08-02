@@ -19,6 +19,7 @@ TABLE_NAME = os.environ['TABLE_NAME']
 OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
 APPROVAL_STR = 'Approval'
 APPROVAL_STATUS_APPROVED = 'approved'
+APPROVAL_STATUS_PENDING = 'pending'
 
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
@@ -36,7 +37,8 @@ def explain(acronym):
         approval = item.get(APPROVAL_STR)
         if approval == None or approval == APPROVAL_STATUS_APPROVED:
             return f'{item["Acronym"]} - {item["Definition"]}\n---\n*Meaning*: {item["Meaning"]}\n*Notes*: {item["Notes"]}' 
-        
+        elif approval == APPROVAL_STATUS_PENDING:
+            return f'{acronym} is waiting for approval.'
     return f'{acronym} is not defined.'
 
 def create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_id):
@@ -46,7 +48,10 @@ def create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_i
     try:
         item = results['Items'][0]
         
-        return item['Acronym'] + " is already defined as  " + item['Definition']
+        if item.get(APPROVAL_STR) == APPROVAL_STATUS_PENDING:
+            return item['Acronym'] + " is waiting for approval."
+        else:
+            return item['Acronym'] + " is already defined as " + item['Definition']
         
     except:
         
