@@ -211,7 +211,7 @@ def lambda_handler(event, context):
         response = explain(acronym)
 
     else:
-        response = f'Usage: /explain <acronym> or /explain <acronym> <definition>'
+        response = f'Usage: /define <acronym> or /define <acronym> <definition>'
 
     # logging
     print (str(command) + ' ' + str(text) +' -> '+ str(response) + ',original: '+ str(msg_map))
