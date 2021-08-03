@@ -52,8 +52,7 @@ def explain(acronym):
         retval = f'{acronym} is not defined.'
 
     return retval
-
-
+    
 @lru_cache(maxsize=60)
 def define(acronym, definition, meaning, notes, response_url, user_id, user_name, team_domain):
     results = table.put_item(
@@ -175,6 +174,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
         "channel": approver,
         "ts": ts if update == True else None
     }
+
 
 
 def create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, approvers):
@@ -391,10 +391,9 @@ def lambda_handler(event, context):
     return_url = payload['response_urls'][0]['response_url']
 
     user_name_capitalized = " ".join(user_name)
-    status_code = define(acronym,definition,meaning,notes,return_url,user_id,user_name_capitalized,team_domain)
-    create_approval_request(acronym,definition,meaning,notes,team_domain,user_id,user_name, APPROVERS)
+    status_code = define(acronym, definition, meaning, notes, return_url, user_id,user_name_capitalized,team_domain)
+    create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, APPROVERS)
     notify_pending_approval(user_id,acronym)
-
     return {
         "statusCode": status_code
     }
@@ -436,6 +435,7 @@ def update_form_closed(item):
     except:
         print("Error in update_form_closed")
 
+def update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, channel, decision, message_ts):
 
 def update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, channel,
                          decision, message_ts):
@@ -507,7 +507,7 @@ def persistDecision(acronym, userId, decision):
     }
 
 
-def update_reviewers(acronym, reviewers, decisionStr):
+def update_reviewers(acronym,reviewers,decisionStr):
     response = table.update_item(
         Key={
             'Acronym': acronym
@@ -530,18 +530,18 @@ def checkAlreadyReviewed(result, userId):
 
 
 def check_hash(event):
-    slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
-    body = get_body(event)
-    timestamp = event["headers"]['x-slack-request-timestamp']
-    sig_basestring = 'v0:' + timestamp + ':' + body
-    my_signature = 'v0=' + hmac.new(
-        bytes(slack_signing_secret, 'UTF-8'),
-        msg=bytes(sig_basestring, 'UTF-8'),
-        digestmod=hashlib.sha256
-    ).hexdigest()
-    print("Generated signature: " + my_signature)
+  slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
+  body = get_body(event)
+  timestamp = event["headers"]['x-slack-request-timestamp']
+  sig_basestring = 'v0:' + timestamp + ':' + body
+  my_signature = 'v0=' + hmac.new(
+    bytes(slack_signing_secret, 'UTF-8'),
+    msg=bytes(sig_basestring, 'UTF-8'),
+    digestmod=hashlib.sha256
+  ).hexdigest()
+  print("Generated signature: " + my_signature)
 
-    slack_signature = event['headers']['x-slack-signature']
-    print("Slack signature: " + slack_signature)
+  slack_signature = event['headers']['x-slack-signature']
+  print("Slack signature: " + slack_signature)
 
-    return hmac.compare_digest(my_signature, slack_signature)
+  return hmac.compare_digest(my_signature, slack_signature)
