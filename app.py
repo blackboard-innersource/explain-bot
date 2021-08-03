@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from aws_cdk import (
-    core as cdk,
-    aws_lambda as _lambda,
-    aws_apigateway as _apigw,
-    aws_apigatewayv2 as _apigw2,
+    core as cdk, 
+    aws_lambda as _lambda, 
+    aws_apigateway as _apigw, 
+    aws_apigatewayv2 as _apigw2, 
     aws_apigatewayv2_integrations as _a2int,
     aws_dynamodb as _dynamo,
     custom_resources as _resources,
@@ -18,7 +18,7 @@ class ExplainSlackBotStack(cdk.Stack):
 
         with open('acronyms.csv') as csvfile:
             dataset = csv.DictReader(csvfile)
-
+        
             data = []
 
             for row in dataset:
@@ -28,7 +28,7 @@ class ExplainSlackBotStack(cdk.Stack):
                     'Meaning': { 'S': row['Meaning'] },
                     'Notes': { 'S': row['Notes'] }
                 })
-
+        
         return data
 
     def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
@@ -39,7 +39,7 @@ class ExplainSlackBotStack(cdk.Stack):
             self, "ExplainHandler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             code=_lambda.Code.asset('lambda'),
-            handler='define.lambda_handler',
+            handler='explain.lambda_handler',
             environment = {
                 'SLACK_SIGNING_SECRET': cfg.config['SLACK_SIGNING_SECRET'],
                 'OAUTH_TOKEN' : cfg.config['OAUTH_TOKEN'],
@@ -70,8 +70,8 @@ class ExplainSlackBotStack(cdk.Stack):
         )
 
         explain_bot_entity = explain_bot_api.add_routes(
-            path="/",
-            methods=[_apigw2.HttpMethod.POST],
+            path="/", 
+            methods=[_apigw2.HttpMethod.POST], 
             integration=explain_bot_entity_lambda_integration
         )
 
@@ -80,8 +80,8 @@ class ExplainSlackBotStack(cdk.Stack):
         )
 
         add_meaning_entity = explain_bot_api.add_routes(
-            path="/add_meaning",
-            methods=[_apigw2.HttpMethod.ANY],
+            path="/add_meaning", 
+            methods=[_apigw2.HttpMethod.ANY], 
             integration=add_meaning_lambda_integration
         )
 
@@ -113,7 +113,7 @@ class ExplainSlackBotStack(cdk.Stack):
         # Create and execute custom resources to add data to the new table
         for i in range(0,len(data)):
             acronym_resource = _resources.AwsCustomResource (
-                self, 'initDBResource' + str(i),
+                self, 'initDBResource' + str(i), 
                 policy=policy,
                 on_create=_resources.AwsSdkCall(
                     service='DynamoDB',
@@ -122,8 +122,8 @@ class ExplainSlackBotStack(cdk.Stack):
                     physical_resource_id=_resources.PhysicalResourceId.of('initDBData' + str(i)),
                 ),
             )
-
-
+        
+        
 
 
 app = cdk.App()
