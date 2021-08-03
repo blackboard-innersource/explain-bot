@@ -1,7 +1,6 @@
 import json
 from urllib import parse as urlparse
 import base64
-from functools import lru_cache
 import math
 import hmac
 import hashlib
@@ -18,6 +17,9 @@ dynamodb = boto3.resource('dynamodb')
 # set environment variable
 TABLE_NAME = os.environ['TABLE_NAME']
 OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
+APPROVAL_STR = 'Approval'
+APPROVAL_STATUS_APPROVED = 'approved'
+APPROVAL_STATUS_PENDING = 'pending'
 
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
@@ -26,20 +28,18 @@ http = urllib3.PoolManager()
 def get_body(event):
     return base64.b64decode(str(event['body'])).decode('ascii')
 
-@lru_cache(maxsize=60)
 def explain(acronym):
-
     results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
 
-    try:
+    if len(results['Items']) > 0:
         item = results['Items'][0]
-        
-        retval = item['Acronym'] + " - " + item['Definition'] + "\n---\n*Meaning*: " + item['Meaning'] +  "\n*Notes*: " + item['Notes']
-        
-    except:
-        retval = f'{acronym} is not defined.'
 
-    return retval
+        approval = item.get(APPROVAL_STR)
+        if approval == None or approval == APPROVAL_STATUS_APPROVED:
+            return f'{item["Acronym"]} - {item["Definition"]}\n---\n*Meaning*: {item["Meaning"]}\n*Notes*: {item["Notes"]}' 
+        elif approval == APPROVAL_STATUS_PENDING:
+            return f'{acronym} is waiting for approval.'
+    return f'{acronym} is not defined.'
 
 def create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_id):
 
@@ -48,7 +48,10 @@ def create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_i
     try:
         item = results['Items'][0]
         
-        return item['Acronym'] + " is already defined as  " + item['Definition']
+        if item.get(APPROVAL_STR) == APPROVAL_STATUS_PENDING:
+            return item['Acronym'] + " is waiting for approval."
+        else:
+            return item['Acronym'] + " is already defined as " + item['Definition']
         
     except:
         
@@ -208,7 +211,7 @@ def lambda_handler(event, context):
         response = explain(acronym)
 
     else:
-        response = f'Usage: /define <acronym> or /define <acronym> <definition>'
+        response = f'Usage: /explain <acronym> or /explain <acronym> <definition>'
 
     # logging
     print (str(command) + ' ' + str(text) +' -> '+ str(response) + ',original: '+ str(msg_map))
