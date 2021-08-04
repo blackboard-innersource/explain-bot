@@ -33,7 +33,7 @@ class ExplainSlackBotStack(cdk.Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # Define Lambda function
-        slack_secret=cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET').toString()
+        slack_secret=cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET')
         print(slack_secret)
         explain_bot_lambda = _lambda.Function(
             self, "ExplainHandler",
