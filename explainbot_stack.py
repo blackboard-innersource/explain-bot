@@ -8,7 +8,6 @@ from aws_cdk import (
     custom_resources as _resources,
 )
 
-import Config as cfg
 import csv
 
 class ExplainSlackBotStack(cdk.Stack):
@@ -40,9 +39,9 @@ class ExplainSlackBotStack(cdk.Stack):
             code=_lambda.Code.asset('lambda'),
             handler='explain.lambda_handler',
             environment = {
-                'SLACK_SIGNING_SECRET': cfg.config['SLACK_SIGNING_SECRET'],
-                'OAUTH_TOKEN' : cfg.config['OAUTH_TOKEN'],
-                'APPROVERS' : cfg.config['APPROVERS']
+                'SLACK_SIGNING_SECRET': cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET'),
+                'OAUTH_TOKEN' : cdk.SecretValue.secrets_manager('OAUTH_TOKEN'),
+                'APPROVERS' : cdk.SecretValue.secrets_manager('APPROVERS')
             }
         )
 
@@ -52,9 +51,9 @@ class ExplainSlackBotStack(cdk.Stack):
             code=_lambda.Code.asset('lambda'),
             handler='add_meaning.lambda_handler',
             environment = {
-                'SLACK_SIGNING_SECRET': cfg.config['SLACK_SIGNING_SECRET'],
-                'OAUTH_TOKEN' : cfg.config['OAUTH_TOKEN'],
-                'APPROVERS' : cfg.config['APPROVERS']
+                'SLACK_SIGNING_SECRET': cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET'),,
+                'OAUTH_TOKEN' : cdk.SecretValue.secrets_manager('OAUTH_TOKEN'),
+                'APPROVERS' : cdk.SecretValue.secrets_manager('APPROVERS')
             }
         )
 
