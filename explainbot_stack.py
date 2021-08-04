@@ -33,27 +33,29 @@ class ExplainSlackBotStack(cdk.Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # Define Lambda function
+        slack_secret=cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET').toString()
+        print(slack_secret)
         explain_bot_lambda = _lambda.Function(
             self, "ExplainHandler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             code=_lambda.Code.asset('lambda'),
             handler='explain.lambda_handler',
             environment = {
-                'SLACK_SIGNING_SECRET': cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET'),
-                'OAUTH_TOKEN' : cdk.SecretValue.secrets_manager('OAUTH_TOKEN'),
-                'APPROVERS' : cdk.SecretValue.secrets_manager('APPROVERS')
+                'SLACK_SIGNING_SECRET': slack_secret,
+                'OAUTH_TOKEN' : cdk.SecretValue.secrets_manager('OAUTH_TOKEN').toString(),
+                'APPROVERS' : cdk.SecretValue.secrets_manager('APPROVERS').toString()
             }
         )
-
+        
         add_meaning_lambda = _lambda.Function(
             self, "AddMeaningHandler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             code=_lambda.Code.asset('lambda'),
             handler='add_meaning.lambda_handler',
             environment = {
-                'SLACK_SIGNING_SECRET': cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET'),
-                'OAUTH_TOKEN' : cdk.SecretValue.secrets_manager('OAUTH_TOKEN'),
-                'APPROVERS' : cdk.SecretValue.secrets_manager('APPROVERS')
+                'SLACK_SIGNING_SECRET': cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET').toString(),
+                'OAUTH_TOKEN' : cdk.SecretValue.secrets_manager('OAUTH_TOKEN').toString(),
+                'APPROVERS' : cdk.SecretValue.secrets_manager('APPROVERS').toString()
             }
         )
 
