@@ -8,6 +8,8 @@ from aws_cdk.pipelines import (
     CdkPipeline,
     SimpleSynthAction
 )
+
+from explainbot_stage import ExplainSlackBotStage
  
 class ExplainSlackBotPipelineStack(cdk.Stack):
     def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
@@ -35,3 +37,7 @@ class ExplainSlackBotPipelineStack(cdk.Stack):
                     synth_command='cdk synth'
             )
         )
+        pipeline.add_application_stage(ExplainSlackBotStage(self, 'PreProd', env={
+            'account': '442001344127',
+            'region': 'us-east-1'
+        }))

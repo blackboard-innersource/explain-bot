@@ -36,7 +36,7 @@ class ExplainSlackBotStack(cdk.Stack):
         slack_signing_secret=cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET').to_string()
         oauth_token=cdk.SecretValue.secrets_manager('OAUTH_TOKEN').to_string()
         approvers=cdk.SecretValue.secrets_manager('APPROVERS').to_string()
-        print(slack_signing_secret)
+
         explain_bot_lambda = _lambda.Function(
             self, "ExplainHandler",
             runtime=_lambda.Runtime.PYTHON_3_8,
@@ -65,6 +65,9 @@ class ExplainSlackBotStack(cdk.Stack):
         explain_bot_api = _apigw2.HttpApi(
             self, 'ExplainSlackBotApi'
         )
+
+        self.url_output = cdk.CfnOutput(self, 'Url',
+            value=explain_bot_api.url)
 
         # Set up proxy integrations
         explain_bot_entity_lambda_integration = _a2int.LambdaProxyIntegration(
