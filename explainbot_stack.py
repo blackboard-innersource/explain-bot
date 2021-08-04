@@ -51,7 +51,7 @@ class ExplainSlackBotStack(cdk.Stack):
             code=_lambda.Code.asset('lambda'),
             handler='add_meaning.lambda_handler',
             environment = {
-                'SLACK_SIGNING_SECRET': cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET'),,
+                'SLACK_SIGNING_SECRET': cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET'),
                 'OAUTH_TOKEN' : cdk.SecretValue.secrets_manager('OAUTH_TOKEN'),
                 'APPROVERS' : cdk.SecretValue.secrets_manager('APPROVERS')
             }
