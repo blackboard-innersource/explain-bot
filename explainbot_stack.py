@@ -10,6 +10,9 @@ from aws_cdk import (
 
 import csv
 
+# Define constants
+INITIAL_DATA_FILE = 'acronyms.csv'
+
 class ExplainBotLambdaStack(cdk.Stack):
 
     explain_bot_lambda: _lambda.Function
@@ -88,24 +91,42 @@ class ExplainBotApiStack(cdk.Stack):
             integration=add_meaning_lambda_integration
         )
 
+
+def get_initial_data(file):
+
+    with open(file) as csvfile:
+        dataset = csv.DictReader(csvfile)
+
+        data = []
+
+        for row in dataset:
+            data.append({
+                'Acronym': { 'S': row['Acronym'] },
+                'Definition': { 'S': row['Definition'] },
+                'Meaning': { 'S': row['Meaning'] },
+                'Notes': { 'S': row['Notes'] }
+            })
+
+    return data
+
+def fill_initial_data(self, begin: int, end: int, data, table_name: str, policy: _resources.AwsCustomResourcePolicy ):
+
+    for i in range(begin, end):
+        acronym_resource = _resources.AwsCustomResource (
+            self, 'initDBResource' + str(i), 
+            policy=policy,
+            on_create=_resources.AwsSdkCall(
+                service='DynamoDB',
+                action='putItem',
+                parameters={ 'TableName': table_name, 'Item': data[i] },
+                physical_resource_id=_resources.PhysicalResourceId.of('initDBData' + str(i)),
+            ),
+        )
+
 class ExplainBotDatabaseStack(cdk.Stack):
 
-    def get_initial_data(self):
-
-        with open('acronyms.csv') as csvfile:
-            dataset = csv.DictReader(csvfile)
-        
-            data = []
-
-            for row in dataset:
-                data.append({
-                    'Acronym': { 'S': row['Acronym'] },
-                    'Definition': { 'S': row['Definition'] },
-                    'Meaning': { 'S': row['Meaning'] },
-                    'Notes': { 'S': row['Notes'] }
-                })
-        
-        return data
+    table_name: str
+    policy: _resources.AwsCustomResourcePolicy
 
     def __init__(
             self, 
@@ -124,6 +145,8 @@ class ExplainBotDatabaseStack(cdk.Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
+        self.table_name = acronym_table.table_name
+
         # Add the table name as an environment variable
         explain_bot_lambda.add_environment("TABLE_NAME", acronym_table.table_name)
         add_meaning_lambda.add_environment("TABLE_NAME", acronym_table.table_name)
@@ -133,25 +156,27 @@ class ExplainBotDatabaseStack(cdk.Stack):
         acronym_table.grant_full_access(add_meaning_lambda)
 
         # Set up the custom resource policy so we can populate the database upon creation
-        policy = _resources.AwsCustomResourcePolicy.from_sdk_calls(
+        self.policy = _resources.AwsCustomResourcePolicy.from_sdk_calls(
             resources=['*']
         )
 
         # Get the data to be added to the new table
-        data = self.get_initial_data()
-
+        data = get_initial_data(INITIAL_DATA_FILE)
         # Create and execute custom resources to add data to the new table
-        for i in range(0,len(data)):
-            acronym_resource = _resources.AwsCustomResource (
-                self, 'initDBResource' + str(i), 
-                policy=policy,
-                on_create=_resources.AwsSdkCall(
-                    service='DynamoDB',
-                    action='putItem',
-                    parameters={ 'TableName': acronym_table.table_name, 'Item': data[i] },
-                    physical_resource_id=_resources.PhysicalResourceId.of('initDBData' + str(i)),
-                ),
-            )
+        fill_initial_data(self, 0, len(data)//2, data, acronym_table.table_name, self.policy)
+
+class ExplainBotFillNextDatabaseStack(cdk.Stack):
+    def __init__(
+            self, 
+            scope: cdk.Construct, 
+            construct_id: str, 
+            table_name: str,
+            policy: _resources.AwsCustomResourcePolicy,
+            **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+        data = get_initial_data(INITIAL_DATA_FILE)
+        fill_initial_data(self, len(data)//2, len(data), data, table_name, policy)
 
 
 class ExplainSlackBotStack(cdk.Stack):
@@ -167,11 +192,19 @@ class ExplainSlackBotStack(cdk.Stack):
             )
         self.url_output = api_stack.url_output
 
-        ExplainBotDatabaseStack(
+        database_stack = ExplainBotDatabaseStack(
             self, "DatabaseStack",
             explain_bot_lambda=lambda_stack.explain_bot_lambda, 
             add_meaning_lambda=lambda_stack.add_meaning_lambda
         )
+
+        ExplainBotFillNextDatabaseStack(
+            self, "FillNextDatabase",
+            table_name = database_stack.table_name,
+            policy =  database_stack.policy
+        )
+
+
 
 
 
