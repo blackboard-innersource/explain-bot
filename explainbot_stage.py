@@ -7,4 +7,5 @@ class ExplainSlackBotStage(cdk.Stage):
 
         service = ExplainSlackBotStack(self, 'WebService')
         
+        print("URL OUTPUT"+service.url_output)
         self.url_output = service.url_output
