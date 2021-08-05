@@ -506,7 +506,7 @@ def check_hash(event):
     digestmod=hashlib.sha256
   ).hexdigest()
   print("Generated signature: " + my_signature)
-
+  print("CAMBIO LAMBDA")
   slack_signature = event['headers']['x-slack-signature']
   print("Slack signature: " + slack_signature)
 
