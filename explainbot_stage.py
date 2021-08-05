@@ -6,6 +6,5 @@ class ExplainSlackBotStage(cdk.Stage):
         super().__init__(scope, id, **kwargs)
 
         service = ExplainSlackBotStack(self, 'WebService')
-        
-        print(service.url_output)
+
         self.url_output = service.url_output

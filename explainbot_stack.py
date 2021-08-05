@@ -10,24 +10,10 @@ from aws_cdk import (
 
 import csv
 
-class ExplainSlackBotStack(cdk.Stack):
+class ExplainBotLambdaStack(cdk.Stack):
 
-    def get_initial_data(self):
-
-        with open('acronyms.csv') as csvfile:
-            dataset = csv.DictReader(csvfile)
-        
-            data = []
-
-            for row in dataset:
-                data.append({
-                    'Acronym': { 'S': row['Acronym'] },
-                    'Definition': { 'S': row['Definition'] },
-                    'Meaning': { 'S': row['Meaning'] },
-                    'Notes': { 'S': row['Notes'] }
-                })
-        
-        return data
+    explain_bot_lambda: _lambda.Function
+    add_meaning_lambda: _lambda.Function
 
     def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -37,7 +23,7 @@ class ExplainSlackBotStack(cdk.Stack):
         oauth_token=cdk.SecretValue.secrets_manager('OAUTH_TOKEN').to_string()
         approvers=cdk.SecretValue.secrets_manager('APPROVERS').to_string()
 
-        explain_bot_lambda = _lambda.Function(
+        self.explain_bot_lambda = _lambda.Function(
             self, "ExplainHandler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             code=_lambda.Code.asset('lambda'),
@@ -49,7 +35,7 @@ class ExplainSlackBotStack(cdk.Stack):
             }
         )
         
-        add_meaning_lambda = _lambda.Function(
+        self.add_meaning_lambda = _lambda.Function(
             self, "AddMeaningHandler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             code=_lambda.Code.asset('lambda'),
@@ -60,6 +46,18 @@ class ExplainSlackBotStack(cdk.Stack):
                 'APPROVERS' : approvers
             }
         )
+
+
+class ExplainBotApiStack(cdk.Stack):
+    def __init__(
+            self, 
+            scope: cdk.Construct, 
+            construct_id: str, 
+            explain_bot_lambda: _lambda.Function,
+            add_meaning_lambda: _lambda.Function,
+            **kwargs
+            ) -> None:
+        super().__init__(scope, construct_id, **kwargs)
 
         # Define API Gateway and HTTP API
         explain_bot_api = _apigw2.HttpApi(
@@ -90,8 +88,35 @@ class ExplainSlackBotStack(cdk.Stack):
             integration=add_meaning_lambda_integration
         )
 
+class ExplainBotDatabaseStack(cdk.Stack):
 
-        # Define dynamoDb table
+    def get_initial_data(self):
+
+        with open('acronyms.csv') as csvfile:
+            dataset = csv.DictReader(csvfile)
+        
+            data = []
+
+            for row in dataset:
+                data.append({
+                    'Acronym': { 'S': row['Acronym'] },
+                    'Definition': { 'S': row['Definition'] },
+                    'Meaning': { 'S': row['Meaning'] },
+                    'Notes': { 'S': row['Notes'] }
+                })
+        
+        return data
+
+    def __init__(
+            self, 
+            scope: cdk.Construct, 
+            construct_id: str,
+            explain_bot_lambda: _lambda.Function,
+            add_meaning_lambda: _lambda.Function,
+            **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+                # Define dynamoDb table
         acronym_table = _dynamo.Table(
             self, id="explainAcronymTable",
             table_name="explainacronymtable",
@@ -127,3 +152,26 @@ class ExplainSlackBotStack(cdk.Stack):
                     physical_resource_id=_resources.PhysicalResourceId.of('initDBData' + str(i)),
                 ),
             )
+
+
+class ExplainSlackBotStack(cdk.Stack):
+
+    def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+        lambda_stack = ExplainBotLambdaStack(self, "LambdaStack")
+        api_stack = ExplainBotApiStack(
+            self, "ApiStack", 
+            explain_bot_lambda=lambda_stack.explain_bot_lambda, 
+            add_meaning_lambda=lambda_stack.add_meaning_lambda
+            )
+        self.url_output = api_stack.url_output
+
+        ExplainBotDatabaseStack(
+            self, "DatabaseStack",
+            explain_bot_lambda=lambda_stack.explain_bot_lambda, 
+            add_meaning_lambda=lambda_stack.add_meaning_lambda
+        )
+
+
+
