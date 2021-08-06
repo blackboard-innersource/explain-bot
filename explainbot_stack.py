@@ -140,6 +140,8 @@ class ExplainBotInitialDataStack(cdk.Stack):
                 "service-role/AWSLambdaBasicExecutionRole")]
         )
 
+        initial_data__role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AmazonDynamoDBFullAccess'))
+
         on_event = _lambda.Function(
             self, "DataHandler",
             runtime=_lambda.Runtime.PYTHON_3_8,
