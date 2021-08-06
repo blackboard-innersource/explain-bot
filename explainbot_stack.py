@@ -133,15 +133,15 @@ class ExplainBotInitialDataStack(cdk.Stack):
             **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        initial_data__role = iam.Role(
+        initial_data_role = iam.Role(
             self, "InitialDataRole",
             assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
             managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name(
                 "service-role/AWSLambdaBasicExecutionRole")]
         )
 
-        initial_data__role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AWSLambdaInvocation-DynamoDB'))
-        initial_data__role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AmazonDynamoDBFullAccess'))
+        initial_data_role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AWSLambdaInvocation-DynamoDB'))
+        initial_data_role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AmazonDynamoDBFullAccess'))
 
         on_event = _lambda.Function(
             self, "DataHandler",
@@ -159,7 +159,7 @@ class ExplainBotInitialDataStack(cdk.Stack):
             self, "InitialDataProvider",
             on_event_handler=on_event,
             log_retention=logs.RetentionDays.ONE_DAY,
-            role=initial_data__role
+            role=initial_data_role
         )
 
         cdk.CustomResource(
