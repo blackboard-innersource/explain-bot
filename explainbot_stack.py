@@ -95,7 +95,7 @@ class ExplainBotApiStack(cdk.Stack):
 
 class ExplainBotDatabaseStack(cdk.Stack):
 
-    table_name: str
+    table: _dynamo.Table
 
     def __init__(
             self, 
@@ -114,7 +114,7 @@ class ExplainBotDatabaseStack(cdk.Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
-        self.table_name = acronym_table.table_name
+        self.table = acronym_table
 
         # Add the table name as an environment variable
         explain_bot_lambda.add_environment("TABLE_NAME", acronym_table.table_name)
@@ -129,7 +129,7 @@ class ExplainBotInitialDataStack(cdk.Stack):
             self, 
             scope: cdk.Construct, 
             construct_id: str, 
-            table_name: str,
+            table: _dynamo.Table,
             **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
@@ -140,6 +140,7 @@ class ExplainBotInitialDataStack(cdk.Stack):
                 "service-role/AWSLambdaBasicExecutionRole")]
         )
 
+        initial_data__role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AWSLambdaInvocation-DynamoDB'))
         initial_data__role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AmazonDynamoDBFullAccess'))
 
         on_event = _lambda.Function(
@@ -148,9 +149,11 @@ class ExplainBotInitialDataStack(cdk.Stack):
             code=_lambda.Code.asset('lambda'),
             handler='initial_data.lambda_handler',
             environment = {
-                'TABLE_NAME': table_name
+                'TABLE_NAME': table.table_name
             },
         )
+
+        table.grant_full_access(on_event)
 
         initial_data_provider = _resources.Provider(
             self, "InitialDataProvider",
@@ -185,7 +188,7 @@ class ExplainSlackBotStack(cdk.Stack):
 
         ExplainBotInitialDataStack(
             self, "InitialDataStack",
-            table_name = database_stack.table_name,
+            table = database_stack.table,
         )
 
 
