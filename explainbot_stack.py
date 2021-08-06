@@ -5,6 +5,8 @@ from aws_cdk import (
     aws_apigatewayv2 as _apigw2, 
     aws_apigatewayv2_integrations as _a2int,
     aws_dynamodb as _dynamo,
+    aws_logs as logs,
+    aws_iam as iam,
     custom_resources as _resources,
 )
 
@@ -91,42 +93,9 @@ class ExplainBotApiStack(cdk.Stack):
             integration=add_meaning_lambda_integration
         )
 
-
-def get_initial_data(file):
-
-    with open(file) as csvfile:
-        dataset = csv.DictReader(csvfile)
-
-        data = []
-
-        for row in dataset:
-            data.append({
-                'Acronym': { 'S': row['Acronym'] },
-                'Definition': { 'S': row['Definition'] },
-                'Meaning': { 'S': row['Meaning'] },
-                'Notes': { 'S': row['Notes'] }
-            })
-
-    return data
-
-def fill_initial_data(self, begin: int, end: int, data, table_name: str, policy: _resources.AwsCustomResourcePolicy ):
-
-    for i in range(begin, end):
-        acronym_resource = _resources.AwsCustomResource (
-            self, 'initDBResource' + str(i), 
-            policy=policy,
-            on_create=_resources.AwsSdkCall(
-                service='DynamoDB',
-                action='putItem',
-                parameters={ 'TableName': table_name, 'Item': data[i] },
-                physical_resource_id=_resources.PhysicalResourceId.of('initDBData' + str(i)),
-            ),
-        )
-
 class ExplainBotDatabaseStack(cdk.Stack):
 
     table_name: str
-    policy: _resources.AwsCustomResourcePolicy
 
     def __init__(
             self, 
@@ -155,29 +124,43 @@ class ExplainBotDatabaseStack(cdk.Stack):
         acronym_table.grant_full_access(explain_bot_lambda)
         acronym_table.grant_full_access(add_meaning_lambda)
 
-        # Set up the custom resource policy so we can populate the database upon creation
-        self.policy = _resources.AwsCustomResourcePolicy.from_sdk_calls(
-            resources=['*']
-        )
-
-        # Get the data to be added to the new table
-        data = get_initial_data(INITIAL_DATA_FILE)
-        # Create and execute custom resources to add data to the new table
-        fill_initial_data(self, 0, len(data)//2, data, acronym_table.table_name, self.policy)
-
-class ExplainBotFillNextDatabaseStack(cdk.Stack):
+class ExplainBotInitialDataStack(cdk.Stack):
     def __init__(
             self, 
             scope: cdk.Construct, 
             construct_id: str, 
             table_name: str,
-            policy: _resources.AwsCustomResourcePolicy,
             **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        data = get_initial_data(INITIAL_DATA_FILE)
-        fill_initial_data(self, len(data)//2, len(data), data, table_name, policy)
+        initial_data__role = iam.Role(
+            self, "InitialDataRole",
+            assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name(
+                "service-role/AWSLambdaBasicExecutionRole")]
+        )
 
+        on_event = _lambda.Function(
+            self, "DataHandler",
+            runtime=_lambda.Runtime.PYTHON_3_8,
+            code=_lambda.Code.asset('lambda'),
+            handler='initial_data.lambda_handler',
+            environment = {
+                'TABLE_NAME': table_name
+            },
+        )
+
+        initial_data_provider = _resources.Provider(
+            self, "InitialDataProvider",
+            on_event_handler=on_event,
+            log_retention=logs.RetentionDays.ONE_DAY,
+            role=initial_data__role
+        )
+
+        cdk.CustomResource(
+            self, "InitialDataResource", 
+            service_token=initial_data_provider.service_token
+        )
 
 class ExplainSlackBotStack(cdk.Stack):
 
@@ -198,10 +181,9 @@ class ExplainSlackBotStack(cdk.Stack):
             add_meaning_lambda=lambda_stack.add_meaning_lambda
         )
 
-        ExplainBotFillNextDatabaseStack(
-            self, "FillNextDatabase",
+        ExplainBotInitialDataStack(
+            self, "InitialDataStack",
             table_name = database_stack.table_name,
-            policy =  database_stack.policy
         )
 
 
