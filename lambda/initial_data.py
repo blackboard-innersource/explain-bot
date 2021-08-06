@@ -7,7 +7,7 @@ dynamodb = boto3.resource('dynamodb')
 table_name = os.environ['TABLE_NAME']
 table = dynamodb.Table(table_name)
 
-s3 = boto3.resource('s3')
+s3 = boto3.client('s3')
 
 def lambda_handler(event, context):
 
