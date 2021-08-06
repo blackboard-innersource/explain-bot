@@ -148,6 +148,7 @@ class ExplainBotInitialDataStack(cdk.Stack):
             runtime=_lambda.Runtime.PYTHON_3_8,
             code=_lambda.Code.asset('lambda'),
             handler='initial_data.lambda_handler',
+            timeout=cdk.Duration.minutes(5),
             environment = {
                 'TABLE_NAME': table.table_name
             },
