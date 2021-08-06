@@ -15,7 +15,7 @@ def lambda_handler(event, context):
     file_key = 'acronyms.csv'
 
     csvfile = s3.get_object(Bucket=bucket, Key=file_key)
-    csvcontent = csvfile['Body'].read().split(b'\n')
+    csvcontent = csvfile['Body'].read().split('\n')
 
     dataset = csv.DictReader(csvcontent)
 
