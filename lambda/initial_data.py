@@ -7,17 +7,24 @@ dynamodb = boto3.resource('dynamodb')
 table_name = os.environ['TABLE_NAME']
 table = dynamodb.Table(table_name)
 
+s3 = boto3.resource('s3')
+
 def lambda_handler(event, context):
 
-    with open('acronyms.csv') as csvfile:
-        dataset = csv.DictReader(csvfile)
+    bucket = 'explainbot-initial-data'
+    file_key = 'acronyms.csv'
 
-        for row in dataset:
-            results = table.put_item(
-                Item={
-                    'Acronym': row['Acronym'],
-                    'Definition': row['Definition'],
-                    'Meaning': row['Meaning'],
-                    'Notes': row['Notes']
-                }
-            )
+    csvfile = s3.get_object(Bucket=bucket, Key=file_key)
+    csvcontent = csvfile['Body'].read().split(b'\n')
+
+    dataset = csv.DictReader(csvcontent)
+
+    for row in dataset:
+        results = table.put_item(
+            Item={
+                'Acronym': row['Acronym'],
+                'Definition': row['Definition'],
+                'Meaning': row['Meaning'],
+                'Notes': row['Notes']
+            }
+        )
