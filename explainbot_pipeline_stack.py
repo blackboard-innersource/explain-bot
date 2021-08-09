@@ -39,9 +39,7 @@ class ExplainSlackBotPipelineStack(cdk.Stack):
             )
         )
 
-        """
         pipeline.add_application_stage(ExplainSlackBotStage(self, 'PreProd', env={
             'account': explainbot_account,
             'region': 'us-east-1'
         }))
-        """
