@@ -17,6 +17,7 @@ class ExplainSlackBotPipelineStack(cdk.Stack):
  
         source_artifact = codepipeline.Artifact()
         cloud_assembly_artifact = codepipeline.Artifact()
+        explainbot_account=cdk.SecretValue.secrets_manager('EXPLAINBOT_ACCOUNT').to_string()
  
         pipeline = CdkPipeline(self, 'Pipeline',
             pipeline_name='ExplainBotPipeline',
@@ -38,6 +39,6 @@ class ExplainSlackBotPipelineStack(cdk.Stack):
             )
         )
         pipeline.add_application_stage(ExplainSlackBotStage(self, 'PreProd', env={
-            'account': '442001344127',
+            'account': explainbot_account,
             'region': 'us-east-1'
         }))
