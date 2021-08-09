@@ -7,13 +7,13 @@ from aws_cdk import (
     aws_dynamodb as _dynamo,
     aws_logs as logs,
     aws_iam as iam,
+    aws_events as _events,
+    aws_events_targets as _events_targets,
     custom_resources as _resources,
 )
 
 import csv
 
-# Define constants
-INITIAL_DATA_FILE = 'acronyms.csv'
 
 class ExplainBotLambdaStack(cdk.Stack):
 
@@ -168,6 +168,36 @@ class ExplainBotInitialDataStack(cdk.Stack):
             service_token=initial_data_provider.service_token
         )
 
+class ExplainBotCloudWatchStack(cdk.Stack):
+    def __init__(
+            self, 
+            scope: cdk.Construct, 
+            construct_id: str,
+            table_name: str,
+            **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+        lambda_schedule = _events.Schedule.rate(cdk.Duration.minutes(20))
+
+        reminder_lambda = _lambda.Function(
+            self, "SendReminderHandler",
+            runtime=_lambda.Runtime.PYTHON_3_8,
+            code=_lambda.Code.asset('lambda'),
+            handler='send_reminder.lambda_handler',
+            timeout=cdk.Duration.minutes(5),
+            environment = {
+                'TABLE_NAME': table_name
+            },
+        )
+
+        event_lambda_target = _events_targets.LambdaFunction(handler = reminder_lambda)
+        lambda_cw_event = _events.Rule(self, "SendReminders",
+            description = "Once per day CW event trigger for lambda",
+            enabled = True,
+            schedule = lambda_schedule,
+            targets = [event_lambda_target]
+        )
+
 class ExplainSlackBotStack(cdk.Stack):
 
     def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
@@ -190,6 +220,11 @@ class ExplainSlackBotStack(cdk.Stack):
         ExplainBotInitialDataStack(
             self, "InitialDataStack",
             table = database_stack.table,
+        )
+
+        ExplainBotCloudWatchStack(
+            self, "ReminderStack",
+            table_name = database_stack.table.table_name
         )
 
 

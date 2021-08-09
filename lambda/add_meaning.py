@@ -10,7 +10,7 @@ import boto3
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 import urllib3
-from datetime import date
+from datetime import datetime
 
 # Get the service resource.
 dynamodb = boto3.resource('dynamodb')
@@ -25,6 +25,8 @@ REQUESTER_STR = 'Requester'
 APPROVAL_STR = 'Approval'
 APPROVAL_STATUS_PENDING = 'pending'
 APPROVAL_STATUS_APPROVED = 'approved'
+REQUEST_TIMESTAMP = 'RequestTimestamp'
+SENT_REMINDERS = 'Reminders'
 REVIEWERS_MAX = 3
 
 table = dynamodb.Table(TABLE_NAME)
@@ -58,7 +60,9 @@ def define(acronym, definition, meaning, notes, response_url, user_id):
             'Meaning': meaning,
             'Notes': notes,
             REQUESTER_STR: user_id,
-            APPROVAL_STR: APPROVAL_STATUS_PENDING
+            APPROVAL_STR: APPROVAL_STATUS_PENDING,
+            REQUEST_TIMESTAMP = datetime.utcnow().timestamp(),
+            SENT_REMINDERS = 0
         }
     )
 
@@ -506,7 +510,7 @@ def check_hash(event):
     digestmod=hashlib.sha256
   ).hexdigest()
   print("Generated signature: " + my_signature)
-  
+
   slack_signature = event['headers']['x-slack-signature']
   print("Slack signature: " + slack_signature)
 
