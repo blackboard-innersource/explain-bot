@@ -217,18 +217,18 @@ def lambda_handler(event, context):
     msg_map = dict(urlparse.parse_qsl(get_body(event)))  # data comes b64 and also urlencoded name=value& pairs
     print(str(msg_map))
 
-    command = msg_map.get('command','err')  # will be /command name
-    text = msg_map.get('text','').split(" ")
-    user_name = msg_map.get('user_name','err')
-    channel_name = msg_map.get('channel_name','err')
-    team_domain = msg_map.get('team_domain','err')
-    trigger_id = msg_map.get('trigger_id','err')
+    command = msg_map.get('command', 'err')  # will be /command name
+    text = msg_map.get('text', '').split(" ")
+    user_name = msg_map.get('user_name', 'err')
+    channel_name = msg_map.get('channel_name', 'err')
+    team_domain = msg_map.get('team_domain', 'err')
+    trigger_id = msg_map.get('trigger_id', 'err')
 
     if (len(text) >= 2):
         acronym = text[0].upper()
         definition = ""
-        i=1
-        for i in range(1,len(text)):
+        i = 1
+        for i in range(1, len(text)):
             definition += text[i]
             if i != len(text):
                 definition += ' '
