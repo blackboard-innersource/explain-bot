@@ -37,8 +37,38 @@ def explain(acronym):
         item = results['Items'][0]
 
         approval = item.get(APPROVAL_STR)
-        if approval == None or approval == APPROVAL_STATUS_APPROVED:
-            return f'{item["Acronym"]} - {item["Definition"]}\n---\n*Meaning*: {item["Meaning"]}\n*Notes*: {item["Notes"]}'
+        if approval is None or approval == APPROVAL_STATUS_APPROVED:
+            definition = {
+                "blocks": [
+                    {
+                        "type": "header",
+                        "text": {
+                            "type": "plain_text",
+                            "text": f"{item['Acronym']}: \"{item['Definition']}\"",
+                            "emoji": True
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"{item['Meaning']}" if item['Meaning'] else "Not meaning found."
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "plain_text",
+                                "text": f"{item['Notes']}" if item['Notes'] else "No additional information.",
+                                "emoji": True
+                            }
+                        ]
+                    }
+                ]
+            }
+
+            return definition
         elif approval == APPROVAL_STATUS_PENDING:
             return f'{acronym} is waiting for approval.'
     return f'{acronym} is not defined.'
@@ -181,7 +211,7 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
 def lambda_handler(event, context):
     print("explain")
 
-    if check_hash(event) == False:
+    if check_hash(event) is False:
         print('Signature check failed')
         print('event: ' + str(event))
         return
