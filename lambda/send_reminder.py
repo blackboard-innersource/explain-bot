@@ -185,10 +185,11 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
 
 def lambda_handler(event, context):
 
-    results = table.query(KeyConditionExpression=Key("Approval").eq('pending'))
+    print('SEND REMINDER HANDLER')
+    results = table.query(IndexName="approval_index", KeyConditionExpression=Key("Approval").eq('pending'))
     if len(results['Items']) > 0:
         items = results['Items']
-
+        print(items)
         for item in items:
             request_time = item.get(REQUEST_TIMESTAMP)//TO_MINUTES
             current_time = datetime.utcnow().timestamp()//TO_MINUTES

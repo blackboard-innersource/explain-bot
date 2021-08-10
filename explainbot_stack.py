@@ -114,6 +114,10 @@ class ExplainBotDatabaseStack(cdk.Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
+        acronym_table.add_global_secondary_index( 
+           partition_key=Attribute(name='Approval', type=_dynamo.AttributeType.STRING),
+           index_name='approval_index')
+
         self.table = acronym_table
 
         # Add the table name as an environment variable
@@ -197,7 +201,7 @@ class ExplainBotCloudWatchStack(cdk.Stack):
         )
 
         table.grant_full_access(reminder_lambda)
-        
+
         event_lambda_target = _events_targets.LambdaFunction(handler = reminder_lambda)
         lambda_cw_event = _events.Rule(self, "SendReminders",
             description = "Once per day CW event trigger for lambda",
