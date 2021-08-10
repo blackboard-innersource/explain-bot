@@ -11,6 +11,7 @@ from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 import urllib3
 from datetime import datetime
+from datetime import date
 
 # Get the service resource.
 dynamodb = boto3.resource('dynamodb')
@@ -61,7 +62,7 @@ def define(acronym, definition, meaning, notes, response_url, user_id, user_name
             REQUESTER_STR: user_id,
             'RequesterName': user_name,
             APPROVAL_STR: APPROVAL_STATUS_PENDING,
-            REQUEST_TIMESTAMP : datetime.utcnow().timestamp(),
+            REQUEST_TIMESTAMP : int(datetime.utcnow().timestamp()),
             'TeamDomain' : team_domain
         }
     )
@@ -370,7 +371,8 @@ def lambda_handler(event, context):
     # Define acronym (persist in DB) and send approval request to approvers
     return_url = payload['response_urls'][0]['response_url']
     
-    status_code = define(acronym,definition,meaning,notes,return_url,user_id,user_name,team_domain)
+    user_name_capitalized = " ".join(user_name)
+    status_code = define(acronym,definition,meaning,notes,return_url,user_id,user_name_capitalized,team_domain)
     create_approval_request(acronym,definition,meaning,notes,team_domain,user_id,user_name)
     notify_pending_approval(user_id,acronym)
     
