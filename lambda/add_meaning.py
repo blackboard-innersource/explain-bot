@@ -61,8 +61,8 @@ def define(acronym, definition, meaning, notes, response_url, user_id, user_name
             REQUESTER_STR: user_id,
             'RequesterName': user_name,
             APPROVAL_STR: APPROVAL_STATUS_PENDING,
-            REQUEST_TIMESTAMP = datetime.utcnow().timestamp(),
-            'TeamDomain' = team_domain
+            REQUEST_TIMESTAMP : datetime.utcnow().timestamp(),
+            'TeamDomain' : team_domain
         }
     )
 
