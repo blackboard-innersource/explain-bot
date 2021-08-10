@@ -173,7 +173,7 @@ class ExplainBotCloudWatchStack(cdk.Stack):
             self, 
             scope: cdk.Construct, 
             construct_id: str,
-            table_name: str,
+            table: _dynamo.Table,
             approvers: str,
             oauth_token: str,
             slack_signing_secret: str,
@@ -189,13 +189,15 @@ class ExplainBotCloudWatchStack(cdk.Stack):
             handler='send_reminder.lambda_handler',
             timeout=cdk.Duration.minutes(5),
             environment = {
-                'TABLE_NAME': table_name,
+                'TABLE_NAME': table.table_name,
                 'APPROVERS': approvers,
                 'OAUTH_TOKEN': oauth_token,
                 'SLACK_SIGNING_SECRET': slack_signing_secret
             },
         )
 
+        table.grant_full_access(reminder_lambda)
+        
         event_lambda_target = _events_targets.LambdaFunction(handler = reminder_lambda)
         lambda_cw_event = _events.Rule(self, "SendReminders",
             description = "Once per day CW event trigger for lambda",
@@ -230,7 +232,7 @@ class ExplainSlackBotStack(cdk.Stack):
 
         ExplainBotCloudWatchStack(
             self, "ReminderStack",
-            table_name = database_stack.table.table_name,
+            table = database_stack.table,
             approvers = lambda_stack.approvers,
             oauth_token = lambda_stack.oauth_token,
             slack_signing_secret = lambda_stack.slack_signing_secret

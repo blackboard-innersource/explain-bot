@@ -1,6 +1,7 @@
 import boto3
 import os
 from datetime import datetime
+from boto3.dynamodb.conditions import Key
 
 # Get the service resource.
 dynamodb = boto3.resource('dynamodb')
@@ -179,32 +180,34 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
         ExpressionAttributeValues={
             ':a': approver_messages,
         },
+        ReturnValues="UPDATED_NEW"
+    )
 
 def lambda_handler(event, context):
 
     results = table.query(KeyConditionExpression=Key("Approval").eq('pending'))
     if len(results['Items']) > 0:
-    items = results['Items']
+        items = results['Items']
 
-    for item in items:
-        request_time = item.get(REQUEST_TIMESTAMP)//TO_MINUTES
-        current_time = datetime.utcnow().timestamp()//TO_MINUTES
-        diff_time  = current_time - request_time
+        for item in items:
+            request_time = item.get(REQUEST_TIMESTAMP)//TO_MINUTES
+            current_time = datetime.utcnow().timestamp()//TO_MINUTES
+            diff_time  = current_time - request_time
 
-        acronym = item.get('Acronym')
-        print(acronym)
-        definition = item.get('Definition')
-        meaning = item.get('Meaning')
-        notes = item.get('Notes')
-        user_id = item.get('Requester')
-        user_name = item.get('RequesterName')
-        team_domain = item.get('TeamDomain')
-        approvers_with_answer = item.get(APPROVERS_STR, []) + item.get(DENIERS_STR, [])
+            acronym = item.get('Acronym')
+            print(acronym)
+            definition = item.get('Definition')
+            meaning = item.get('Meaning')
+            notes = item.get('Notes')
+            user_id = item.get('Requester')
+            user_name = item.get('RequesterName')
+            team_domain = item.get('TeamDomain')
+            approvers_with_answer = item.get(APPROVERS_STR, []) + item.get(DENIERS_STR, [])
 
-        if diff_time == 5:
-            send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer, False)
-        elif diff_time == 10:
-            send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer, True)
-        else:
-            print('Should have been deleted')
+            if diff_time == 5:
+                send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer, False)
+            elif diff_time == 10:
+                send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer, True)
+            else:
+                print('Should have been deleted')
 
