@@ -48,6 +48,7 @@ def update_form_closed(item):
         print( "Error")
 
 def send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer, delete):
+    print('Got to send reminder')
     approvers_missing = [approver for approver in approvers_with_answer if item not in APPROVERS ]
     create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, approvers_missing)
     if delete:
@@ -191,9 +192,15 @@ def lambda_handler(event, context):
         items = results['Items']
         print(items)
         for item in items:
-            request_time = item.get(REQUEST_TIMESTAMP)//TO_MINUTES
-            current_time = datetime.utcnow().timestamp()//TO_MINUTES
+            request_time = int(item.get(REQUEST_TIMESTAMP))//TO_MINUTES
+            print('RequestTime: ')
+            print(request_time)
+            current_time = int(datetime.utcnow().timestamp())//TO_MINUTES
+            print('CurrentTime: ')
+            print(current_time)
             diff_time  = current_time - request_time
+            print('Diff time')
+            print(diff_time)
 
             acronym = item.get('Acronym')
             print(acronym)
@@ -209,6 +216,4 @@ def lambda_handler(event, context):
                 send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer, False)
             elif diff_time == 10:
                 send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer, True)
-            else:
-                print('Should have been deleted')
 
