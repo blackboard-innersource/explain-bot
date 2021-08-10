@@ -115,7 +115,7 @@ class ExplainBotDatabaseStack(cdk.Stack):
         )
 
         acronym_table.add_global_secondary_index( 
-           partition_key=Attribute(name='Approval', type=_dynamo.AttributeType.STRING),
+           partition_key=_dynamo.Attribute(name='Approval', type=_dynamo.AttributeType.STRING),
            index_name='approval_index')
 
         self.table = acronym_table
