@@ -26,7 +26,6 @@ APPROVAL_STR = 'Approval'
 APPROVAL_STATUS_PENDING = 'pending'
 APPROVAL_STATUS_APPROVED = 'approved'
 REQUEST_TIMESTAMP = 'RequestTimestamp'
-SENT_REMINDERS = 'Reminders'
 REVIEWERS_MAX = 3
 
 table = dynamodb.Table(TABLE_NAME)
@@ -51,7 +50,7 @@ def explain(acronym):
     return retval
     
 @lru_cache(maxsize=60)
-def define(acronym, definition, meaning, notes, response_url, user_id):
+def define(acronym, definition, meaning, notes, response_url, user_id, user_name, team_domain):
     
     results = table.put_item(
         Item={
@@ -60,9 +59,10 @@ def define(acronym, definition, meaning, notes, response_url, user_id):
             'Meaning': meaning,
             'Notes': notes,
             REQUESTER_STR: user_id,
+            'RequesterName': user_name,
             APPROVAL_STR: APPROVAL_STATUS_PENDING,
             REQUEST_TIMESTAMP = datetime.utcnow().timestamp(),
-            SENT_REMINDERS = 0
+            'TeamDomain' = team_domain
         }
     )
 
@@ -370,7 +370,7 @@ def lambda_handler(event, context):
     # Define acronym (persist in DB) and send approval request to approvers
     return_url = payload['response_urls'][0]['response_url']
     
-    status_code = define(acronym,definition,meaning,notes,return_url,user_id)
+    status_code = define(acronym,definition,meaning,notes,return_url,user_id,user_name,team_domain)
     create_approval_request(acronym,definition,meaning,notes,team_domain,user_id,user_name)
     notify_pending_approval(user_id,acronym)
     

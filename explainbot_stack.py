@@ -12,21 +12,21 @@ from aws_cdk import (
     custom_resources as _resources,
 )
 
-import csv
-
-
 class ExplainBotLambdaStack(cdk.Stack):
 
     explain_bot_lambda: _lambda.Function
     add_meaning_lambda: _lambda.Function
+    approvers: str
+    slack_signing_secret: str
+    oauth_token: str
 
     def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # Define Lambda function
-        slack_signing_secret=cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET').to_string()
-        oauth_token=cdk.SecretValue.secrets_manager('OAUTH_TOKEN').to_string()
-        approvers=cdk.SecretValue.secrets_manager('APPROVERS').to_string()
+        self.slack_signing_secret=cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET').to_string()
+        self.oauth_token=cdk.SecretValue.secrets_manager('OAUTH_TOKEN').to_string()
+        self.approvers=cdk.SecretValue.secrets_manager('APPROVERS').to_string()
 
         self.explain_bot_lambda = _lambda.Function(
             self, "ExplainHandler",
@@ -34,9 +34,9 @@ class ExplainBotLambdaStack(cdk.Stack):
             code=_lambda.Code.asset('lambda'),
             handler='explain.lambda_handler',
             environment = {
-                'SLACK_SIGNING_SECRET': slack_signing_secret,
-                'OAUTH_TOKEN' : oauth_token,
-                'APPROVERS' : approvers
+                'SLACK_SIGNING_SECRET': self.slack_signing_secret,
+                'OAUTH_TOKEN' : self.oauth_token,
+                'APPROVERS' : self.approvers
             }
         )
         
@@ -46,9 +46,9 @@ class ExplainBotLambdaStack(cdk.Stack):
             code=_lambda.Code.asset('lambda'),
             handler='add_meaning.lambda_handler',
             environment = {
-                'SLACK_SIGNING_SECRET': slack_signing_secret,
-                'OAUTH_TOKEN' : oauth_token,
-                'APPROVERS' : approvers
+                'SLACK_SIGNING_SECRET': self.slack_signing_secret,
+                'OAUTH_TOKEN' : self.oauth_token,
+                'APPROVERS' : self.approvers
             }
         )
 
@@ -174,10 +174,13 @@ class ExplainBotCloudWatchStack(cdk.Stack):
             scope: cdk.Construct, 
             construct_id: str,
             table_name: str,
+            approvers: str,
+            oauth_token: str,
+            slack_signing_secret: str,
             **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        lambda_schedule = _events.Schedule.rate(cdk.Duration.minutes(20))
+        lambda_schedule = _events.Schedule.rate(cdk.Duration.minutes(1))
 
         reminder_lambda = _lambda.Function(
             self, "SendReminderHandler",
@@ -186,7 +189,10 @@ class ExplainBotCloudWatchStack(cdk.Stack):
             handler='send_reminder.lambda_handler',
             timeout=cdk.Duration.minutes(5),
             environment = {
-                'TABLE_NAME': table_name
+                'TABLE_NAME': table_name,
+                'APPROVERS': approvers,
+                'OAUTH_TOKEN': oauth_token,
+                'SLACK_SIGNING_SECRET': slack_signing_secret
             },
         )
 
@@ -224,7 +230,10 @@ class ExplainSlackBotStack(cdk.Stack):
 
         ExplainBotCloudWatchStack(
             self, "ReminderStack",
-            table_name = database_stack.table.table_name
+            table_name = database_stack.table.table_name,
+            approvers = lambda_stack.approvers,
+            oauth_token = lambda_stack.oauth_token,
+            slack_signing_secret = lambda_stack.slack_signing_secret
         )
 
 
