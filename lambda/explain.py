@@ -10,7 +10,6 @@ from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 import urllib3
 
-
 # Get the service resource.
 dynamodb = boto3.resource('dynamodb')
 
@@ -24,9 +23,12 @@ APPROVAL_STATUS_PENDING = 'pending'
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
 
+attachment_color = '#8FE7FA'  # light blue
+
 
 def get_body(event):
     return base64.b64decode(str(event['body'])).decode('ascii')
+
 
 def explain(acronym):
     results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
@@ -35,31 +37,59 @@ def explain(acronym):
         item = results['Items'][0]
 
         approval = item.get(APPROVAL_STR)
-        if approval == None or approval == APPROVAL_STATUS_APPROVED:
-            return f'{item["Acronym"]} - {item["Definition"]}\n---\n*Meaning*: {item["Meaning"]}\n*Notes*: {item["Notes"]}' 
+        if approval is None or approval == APPROVAL_STATUS_APPROVED:
+            definition = {
+                "blocks": [
+                    {
+                        "type": "header",
+                        "text": {
+                            "type": "plain_text",
+                            "text": f"{item['Acronym']}: \"{item['Definition']}\"",
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"{item['Meaning']}" if item['Meaning'] else "Not meaning found."
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "plain_text",
+                                "text": f"{item['Notes']}" if item['Notes'] else "No additional information."
+                            }
+                        ]
+                    }
+                ]
+            }
+
+            return definition
         elif approval == APPROVAL_STATUS_PENDING:
             return f'{acronym} is waiting for approval.'
     return f'{acronym} is not defined.'
 
-def create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_id):
 
+def create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id):
     results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
-    
+
     try:
         item = results['Items'][0]
-        
+
         if item.get(APPROVAL_STR) == APPROVAL_STATUS_PENDING:
             return item['Acronym'] + " is waiting for approval."
         else:
             return item['Acronym'] + " is already defined as " + item['Definition']
-        
+
     except:
-        
+
         initial_notes = 'Added by ' + user_name + ' from #' + channel_name + ' on ' + team_domain + '.slack.com'
-        
-        modal={
+
+        modal = {
             "trigger_id": trigger_id,
-            "view" : {
+            "view": {
                 "title": {
                     "type": "plain_text",
                     "text": "Define an Acronym"
@@ -73,7 +103,7 @@ def create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_i
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "Define the acronym using the form below."
+                            "text": f"Define '{acronym}' using the form below."
                         }
                     },
                     {
@@ -161,16 +191,16 @@ def create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_i
         }
 
         print("modal: " + str(modal))
-        
+
         headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + OAUTH_TOKEN
         }
 
         print("headers: " + str(headers))
-        
+
         response = http.request('POST', 'https://slack.com/api/views.open', body=json.dumps(modal), headers=headers)
-        
+
         print("response: " + str(response.status) + " " + str(response.data))
 
     return f'Launching definition modal...'
@@ -178,12 +208,12 @@ def create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_i
 
 def lambda_handler(event, context):
     print("explain")
-    
-    if check_hash(event) == False:
+
+    if check_hash(event) is False:
         print('Signature check failed')
         print('event: ' + str(event))
         return
-    
+
     msg_map = dict(urlparse.parse_qsl(get_body(event)))  # data comes b64 and also urlencoded name=value& pairs
     print(str(msg_map))
 
@@ -202,25 +232,26 @@ def lambda_handler(event, context):
             definition += text[i]
             if i != len(text):
                 definition += ' '
-                
-        response = create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_id)
+
+        response = create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id)
 
     elif (len(text) == 1):
         acronym = text[0].upper()
-        
+
         response = explain(acronym)
 
     else:
         response = f'Usage: /define <acronym> or /define <acronym> <definition>'
 
     # logging
-    print (str(command) + ' ' + str(text) +' -> '+ str(response) + ',original: '+ str(msg_map))
+    print(str(command) + ' ' + str(text) + ' -> ' + str(response) + ',original: ' + str(msg_map))
 
-    return  {
+    return {
         "response_type": "in_channel",
-        "text": command + ' ' + " ".join(text),
+        # "text": command + ' ' + " ".join(text),
         "attachments": [
             {
+                "color": attachment_color,
                 "text": response
             }
         ]
@@ -228,18 +259,18 @@ def lambda_handler(event, context):
 
 
 def check_hash(event):
-  slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
-  body = get_body(event)
-  timestamp = event["headers"]['x-slack-request-timestamp']
-  sig_basestring = 'v0:' + timestamp + ':' + body
-  my_signature = 'v0=' + hmac.new(
-    bytes(slack_signing_secret, 'UTF-8'),
-    msg=bytes(sig_basestring, 'UTF-8'),
-    digestmod=hashlib.sha256
-  ).hexdigest()
-  print("Generated signature: " + my_signature)
+    slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
+    body = get_body(event)
+    timestamp = event["headers"]['x-slack-request-timestamp']
+    sig_basestring = 'v0:' + timestamp + ':' + body
+    my_signature = 'v0=' + hmac.new(
+        bytes(slack_signing_secret, 'UTF-8'),
+        msg=bytes(sig_basestring, 'UTF-8'),
+        digestmod=hashlib.sha256
+    ).hexdigest()
+    print("Generated signature: " + my_signature)
 
-  slack_signature = event['headers']['x-slack-signature']
-  print("Slack signature: " + slack_signature)
+    slack_signature = event['headers']['x-slack-signature']
+    print("Slack signature: " + slack_signature)
 
-  return hmac.compare_digest(my_signature, slack_signature)
+    return hmac.compare_digest(my_signature, slack_signature)
