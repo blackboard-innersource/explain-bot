@@ -28,7 +28,7 @@ class ExplainSlackBotPipelineStack(cdk.Stack):
                 oauth_token=cdk.SecretValue.secrets_manager('GITHUB_TOKEN_NAME'),
                 owner='blackboard-innersource',
                 repo='explain-bot',
-                branch='feature/add_pipeline',
+                branch='feature/add-30-day-reminder',
                 trigger=cpactions.GitHubTrigger.POLL
             ),
             synth_action=SimpleSynthAction(
@@ -38,6 +38,7 @@ class ExplainSlackBotPipelineStack(cdk.Stack):
                     synth_command='cdk synth'
             )
         )
+
         pipeline.add_application_stage(ExplainSlackBotStage(self, 'PreProd', env={
             'account': explainbot_account,
             'region': 'us-east-1'

@@ -7,26 +7,26 @@ from aws_cdk import (
     aws_dynamodb as _dynamo,
     aws_logs as logs,
     aws_iam as iam,
+    aws_events as _events,
+    aws_events_targets as _events_targets,
     custom_resources as _resources,
 )
-
-import csv
-
-# Define constants
-INITIAL_DATA_FILE = 'acronyms.csv'
 
 class ExplainBotLambdaStack(cdk.Stack):
 
     explain_bot_lambda: _lambda.Function
     add_meaning_lambda: _lambda.Function
+    approvers: str
+    slack_signing_secret: str
+    oauth_token: str
 
     def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # Define Lambda function
-        slack_signing_secret=cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET').to_string()
-        oauth_token=cdk.SecretValue.secrets_manager('OAUTH_TOKEN').to_string()
-        approvers=cdk.SecretValue.secrets_manager('APPROVERS').to_string()
+        self.slack_signing_secret=cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET').to_string()
+        self.oauth_token=cdk.SecretValue.secrets_manager('OAUTH_TOKEN').to_string()
+        self.approvers=cdk.SecretValue.secrets_manager('APPROVERS').to_string()
 
         self.explain_bot_lambda = _lambda.Function(
             self, "ExplainHandler",
@@ -34,9 +34,9 @@ class ExplainBotLambdaStack(cdk.Stack):
             code=_lambda.Code.asset('lambda'),
             handler='explain.lambda_handler',
             environment = {
-                'SLACK_SIGNING_SECRET': slack_signing_secret,
-                'OAUTH_TOKEN' : oauth_token,
-                'APPROVERS' : approvers
+                'SLACK_SIGNING_SECRET': self.slack_signing_secret,
+                'OAUTH_TOKEN' : self.oauth_token,
+                'APPROVERS' : self.approvers
             }
         )
         
@@ -46,9 +46,9 @@ class ExplainBotLambdaStack(cdk.Stack):
             code=_lambda.Code.asset('lambda'),
             handler='add_meaning.lambda_handler',
             environment = {
-                'SLACK_SIGNING_SECRET': slack_signing_secret,
-                'OAUTH_TOKEN' : oauth_token,
-                'APPROVERS' : approvers
+                'SLACK_SIGNING_SECRET': self.slack_signing_secret,
+                'OAUTH_TOKEN' : self.oauth_token,
+                'APPROVERS' : self.approvers
             }
         )
 
@@ -114,6 +114,10 @@ class ExplainBotDatabaseStack(cdk.Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
+        acronym_table.add_global_secondary_index( 
+           partition_key=_dynamo.Attribute(name='Approval', type=_dynamo.AttributeType.STRING),
+           index_name='approval_index')
+
         self.table = acronym_table
 
         # Add the table name as an environment variable
@@ -168,6 +172,44 @@ class ExplainBotInitialDataStack(cdk.Stack):
             service_token=initial_data_provider.service_token
         )
 
+class ExplainBotCloudWatchStack(cdk.Stack):
+    def __init__(
+            self, 
+            scope: cdk.Construct, 
+            construct_id: str,
+            table: _dynamo.Table,
+            approvers: str,
+            oauth_token: str,
+            slack_signing_secret: str,
+            **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+        lambda_schedule = _events.Schedule.rate(cdk.Duration.days(1))
+
+        reminder_lambda = _lambda.Function(
+            self, "SendReminderHandler",
+            runtime=_lambda.Runtime.PYTHON_3_8,
+            code=_lambda.Code.asset('lambda'),
+            handler='send_reminder.lambda_handler',
+            timeout=cdk.Duration.minutes(5),
+            environment = {
+                'TABLE_NAME': table.table_name,
+                'APPROVERS': approvers,
+                'OAUTH_TOKEN': oauth_token,
+                'SLACK_SIGNING_SECRET': slack_signing_secret
+            },
+        )
+
+        table.grant_full_access(reminder_lambda)
+
+        event_lambda_target = _events_targets.LambdaFunction(handler = reminder_lambda)
+        lambda_cw_event = _events.Rule(self, "SendReminders",
+            description = "Once per day CW event trigger for lambda",
+            enabled = True,
+            schedule = lambda_schedule,
+            targets = [event_lambda_target]
+        )
+
 class ExplainSlackBotStack(cdk.Stack):
 
     def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
@@ -190,6 +232,14 @@ class ExplainSlackBotStack(cdk.Stack):
         ExplainBotInitialDataStack(
             self, "InitialDataStack",
             table = database_stack.table,
+        )
+
+        ExplainBotCloudWatchStack(
+            self, "ReminderStack",
+            table = database_stack.table,
+            approvers = lambda_stack.approvers,
+            oauth_token = lambda_stack.oauth_token,
+            slack_signing_secret = lambda_stack.slack_signing_secret
         )
 
 
