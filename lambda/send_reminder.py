@@ -1,8 +1,16 @@
-import boto3
+import json
+from urllib import parse as urlparse
 import os
-from datetime import datetime
+import boto3
+from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
+import urllib3
+from datetime import datetime
+from datetime import date
 
+
+
+http = urllib3.PoolManager()
 # Get the service resource.
 dynamodb = boto3.resource('dynamodb')
 table_name = os.environ['TABLE_NAME']
@@ -10,7 +18,7 @@ table = dynamodb.Table(table_name)
 APPROVERS = os.environ['APPROVERS'].split(',')
 OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
 
-TO_MINUTES = 1000*60
+TO_MINUTES = 60
 REQUEST_TIMESTAMP = 'RequestTimestamp'
 SENT_REMINDERS = 'Reminders'
 APPROVERS_STR = 'Approvers'
@@ -20,20 +28,20 @@ DENIERS_STR = 'Deniers'
 def update_form_closed(item):
     try:
         approvers_message_list = item['ApproverMessages']
-
-        for item in approvers_message_list:
+        acronym = item['Acronym']
+        for reg in approvers_message_list:
             modal = {
                 "blocks": [
                     {
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "*The request for: " + acronym + " is completed. Thanks for contributing, the voting is closed!*\n"
+                            "text": "*The request for: " + acronym  + " is completed. Thanks for contributing, the voting is closed!*\n"
                         }
                     }
                 ],
-                "channel": item['channel'],
-                "ts": item['ts']
+                "channel": reg['channel'],
+                "ts": reg['ts']
             }
 
             headers = {
@@ -47,17 +55,12 @@ def update_form_closed(item):
     except:
         print( "Error")
 
-def send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer, delete):
+def send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer):
     print('Got to send reminder')
-    approvers_missing = [approver for approver in approvers_with_answer if item not in APPROVERS ]
+    approvers_missing = [approver for approver in APPROVERS if approver not in approvers_with_answer ]
+    print(approvers_missing)
     create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, approvers_missing)
-    if delete:
-        response = table.delete_item(
-                Key={
-                    'Acronym': acronym
-                }
-        )
-        # update_form_closed()
+        
 
 def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, approver, ts, update):
     return {
@@ -147,8 +150,10 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
         meaning = "-"
 
     for approver in approvers:
-        if approver != user_id:
-
+        print('iterate approvers')
+        print(approver)
+        if approver == user_id:
+            print('Send my own ')
             #Send approval request
             modal = get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name_capitalized, date_requested, approver, None, False)
 
@@ -186,21 +191,15 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
 
 def lambda_handler(event, context):
 
-    print('SEND REMINDER HANDLER')
     results = table.query(IndexName="approval_index", KeyConditionExpression=Key("Approval").eq('pending'))
+    print(results)
     if len(results['Items']) > 0:
         items = results['Items']
         print(items)
         for item in items:
-            request_time = int(item.get(REQUEST_TIMESTAMP))//TO_MINUTES
-            print('RequestTime: ')
-            print(request_time)
-            current_time = int(datetime.utcnow().timestamp())//TO_MINUTES
-            print('CurrentTime: ')
-            print(current_time)
-            diff_time  = current_time - request_time
-            print('Diff time')
-            print(diff_time)
+            request_time = float(item.get(REQUEST_TIMESTAMP))
+            current_time = float(datetime.utcnow().timestamp())
+            diff_time  = (current_time - request_time)//TO_MINUTES
 
             acronym = item.get('Acronym')
             print(acronym)
@@ -212,8 +211,13 @@ def lambda_handler(event, context):
             team_domain = item.get('TeamDomain')
             approvers_with_answer = item.get(APPROVERS_STR, []) + item.get(DENIERS_STR, [])
 
-            if diff_time == 5:
-                send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer, False)
-            elif diff_time == 10:
-                send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer, True)
+            if diff_time == 1:
+                send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer)
+            elif diff_time == 2:
+                update_form_closed(item)
+                response = table.delete_item(
+                    Key={
+                        'Acronym': acronym
+                    }
+                )
 
