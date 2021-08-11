@@ -12,6 +12,7 @@ from boto3.dynamodb.conditions import Key
 import urllib3
 from datetime import datetime
 from datetime import date
+from explain import attachment_color
 
 # Get the service resource.
 dynamodb = boto3.resource('dynamodb')
@@ -64,8 +65,8 @@ def define(acronym, definition, meaning, notes, response_url, user_id, user_name
             REQUESTER_STR: user_id,
             'RequesterName': user_name,
             APPROVAL_STR: APPROVAL_STATUS_PENDING,
-            REQUEST_TIMESTAMP : int(datetime.utcnow().timestamp()),
-            'TeamDomain' : team_domain
+            REQUEST_TIMESTAMP: int(datetime.utcnow().timestamp()),
+            'TeamDomain': team_domain
         }
     )
 
@@ -98,7 +99,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
     return {
         "attachments": [
             {
-                "color": "#000000",
+                "color": attachment_color,
                 "blocks": [
                     {
                         "type": "section",
@@ -145,7 +146,6 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                                 "type": "button",
                                 "text": {
                                     "type": "plain_text",
-                                    "emoji": True,
                                     "text": "Approve"
                                 },
                                 "style": "primary",
@@ -155,7 +155,6 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                                 "type": "button",
                                 "text": {
                                     "type": "plain_text",
-                                    "emoji": True,
                                     "text": "Deny"
                                 },
                                 "style": "danger",
@@ -265,7 +264,7 @@ def notify_pending_approval(user_id, acronym):
         "channel": user_id,
         "attachments": [
             {
-                "color": "#000000",
+                "color": attachment_color,
                 "blocks": [
                     {
                         "type": "section",
@@ -409,13 +408,13 @@ def update_form_closed(item):
             modal = {
                 "attachments": [
                     {
-                        "color": "#000000",
+                        "color": attachment_color,
                         "blocks": [
                             {
                                 "type": "section",
                                 "text": {
                                     "type": "mrkdwn",
-                                    "text": "*The request for: " + acronym + " is completed.*\n Thanks for contributing, the voting is closed!"
+                                    "text": f"*The request for '{acronym}' is completed.*\n Thanks for contributing, the voting is closed!"
                                 }
                             }
                         ]

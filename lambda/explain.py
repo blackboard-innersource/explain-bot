@@ -23,7 +23,7 @@ APPROVAL_STATUS_PENDING = 'pending'
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
 
-attachment_color = '#000000'  # black
+attachment_color = '#8FE7FA'  # light blue
 
 
 def get_body(event):
@@ -45,7 +45,6 @@ def explain(acronym):
                         "text": {
                             "type": "plain_text",
                             "text": f"{item['Acronym']}: \"{item['Definition']}\"",
-                            "emoji": True
                         }
                     },
                     {
@@ -60,8 +59,7 @@ def explain(acronym):
                         "elements": [
                             {
                                 "type": "plain_text",
-                                "text": f"{item['Notes']}" if item['Notes'] else "No additional information.",
-                                "emoji": True
+                                "text": f"{item['Notes']}" if item['Notes'] else "No additional information."
                             }
                         ]
                     }
