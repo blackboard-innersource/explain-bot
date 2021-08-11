@@ -10,7 +10,6 @@ from datetime import date
 from add_meaning import update_form_closed, get_approval_form
 
 
-
 http = urllib3.PoolManager()
 # Get the service resource.
 dynamodb = boto3.resource('dynamodb')
@@ -21,7 +20,6 @@ OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
 
 TO_MINUTES = 60
 REQUEST_TIMESTAMP = 'RequestTimestamp'
-SENT_REMINDERS = 'Reminders'
 APPROVERS_STR = 'Approvers'
 DENIERS_STR = 'Deniers'
 
