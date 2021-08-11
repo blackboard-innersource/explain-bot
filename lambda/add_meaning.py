@@ -177,6 +177,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
     }
 
 
+
 def create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, approvers):
     user_name_capitalized = " ".join(user_name)
     date_requested = date.today().strftime("%d/%m/%Y")
@@ -391,8 +392,8 @@ def lambda_handler(event, context):
     return_url = payload['response_urls'][0]['response_url']
 
     user_name_capitalized = " ".join(user_name)
-    status_code = define(acronym,definition,meaning,notes,return_url,user_id,user_name_capitalized,team_domain)
-    create_approval_request(acronym,definition,meaning,notes,team_domain,user_id,user_name, APPROVERS)
+    status_code = define(acronym, definition, meaning, notes, return_url, user_id,user_name_capitalized,team_domain)
+    create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, APPROVERS)
     notify_pending_approval(user_id,acronym)
 
     return {
@@ -435,7 +436,6 @@ def update_form_closed(item):
             print("response: " + str(response.status) + " " + str(response.data))
     except:
         print("Error in update_form_closed")
-
 
 def update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, channel,
                          decision, message_ts):

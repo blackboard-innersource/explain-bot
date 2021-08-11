@@ -38,38 +38,36 @@ def explain(acronym):
 
         approval = item.get(APPROVAL_STR)
         if approval is None or approval == APPROVAL_STATUS_APPROVED:
-            definition = {
-                "blocks": [
-                    {
-                        "type": "header",
-                        "text": {
-                            "type": "plain_text",
-                            "text": f"{item['Acronym']}: \"{item['Definition']}\"",
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": f"{item['Meaning']}" if item['Meaning'] else "Not meaning found."
-                        }
-                    },
-                    {
-                        "type": "context",
-                        "elements": [
-                            {
-                                "type": "plain_text",
-                                "text": f"{item['Notes']}" if item['Notes'] else "No additional information."
-                            }
-                        ]
+            definition = [
+                {
+                    "type": "header",
+                    "text": {
+                        "type": "plain_text",
+                        "text": f"{item['Acronym']}: \"{item['Definition']}\"",
                     }
-                ]
-            }
+                },
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f"{item['Meaning']}" if item['Meaning'] else "Not meaning found."
+                    }
+                },
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "plain_text",
+                            "text": f"{item['Notes']}" if item['Notes'] else "No additional information."
+                        }
+                    ]
+                }
+            ]
 
             return definition
         elif approval == APPROVAL_STATUS_PENDING:
-            return f'{acronym} is waiting for approval.'
-    return f'{acronym} is not defined.'
+            return returnSingleBlocks(f'{acronym} is waiting for approval.')
+    return returnSingleBlocks(f'{acronym} is not defined. If you figured it out let me know.')
 
 
 def create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id):
@@ -79,9 +77,9 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
         item = results['Items'][0]
 
         if item.get(APPROVAL_STR) == APPROVAL_STATUS_PENDING:
-            return item['Acronym'] + " is waiting for approval."
+            return returnSingleBlocks(item['Acronym'] + " is waiting for approval.")
         else:
-            return item['Acronym'] + " is already defined as " + item['Definition']
+            return returnSingleBlocks(item['Acronym'] + " is already defined as " + item['Definition'])
 
     except:
 
@@ -203,7 +201,7 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
 
         print("response: " + str(response.status) + " " + str(response.data))
 
-    return f'Launching definition modal...'
+    return returnSingleBlocks("Launching definition modal...")
 
 
 def lambda_handler(event, context):
@@ -241,18 +239,17 @@ def lambda_handler(event, context):
         response = explain(acronym)
 
     else:
-        response = f'Usage: /explain <acronym> or /explain <acronym> <definition>'
+        response = returnSingleBlocks("Usage: /define <acronym> or /define <acronym> <definition>")
 
     # logging
     print(str(command) + ' ' + str(text) + ' -> ' + str(response) + ',original: ' + str(msg_map))
 
     return {
         "response_type": "in_channel",
-        # "text": command + ' ' + " ".join(text),
         "attachments": [
             {
                 "color": attachment_color,
-                "text": response
+                "blocks": response
             }
         ]
     }
@@ -274,3 +271,14 @@ def check_hash(event):
     print("Slack signature: " + slack_signature)
 
     return hmac.compare_digest(my_signature, slack_signature)
+
+def returnSingleBlocks(text):
+    return [
+        {
+            "type": "section",
+            "text": {
+                "type": "plain_text",
+                "text": text
+            }
+        }
+    ]
