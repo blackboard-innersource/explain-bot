@@ -184,8 +184,7 @@ class ExplainBotCloudWatchStack(cdk.Stack):
             **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # Change to cdk.Duration.days(1)
-        lambda_schedule = _events.Schedule.rate(cdk.Duration.minutes(1))
+        lambda_schedule = _events.Schedule.rate(cdk.Duration.days(1))
 
         reminder_lambda = _lambda.Function(
             self, "SendReminderHandler",

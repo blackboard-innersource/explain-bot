@@ -202,6 +202,7 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
 
             if data.get('ok'):
                 message_data = {
+                    'approver': approver,
                     'channel': data.get('channel'),
                     'ts': data.get('ts')
                 }
