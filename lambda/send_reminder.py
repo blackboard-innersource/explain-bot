@@ -18,6 +18,7 @@ table = dynamodb.Table(table_name)
 APPROVERS = os.environ['APPROVERS'].split(',')
 OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
 
+# Change to TO_DAYS = 60*60*24
 TO_MINUTES = 60
 REQUEST_TIMESTAMP = 'RequestTimestamp'
 APPROVERS_STR = 'Approvers'
@@ -86,6 +87,7 @@ def lambda_handler(event, context):
         for item in items:
             request_time = float(item.get(REQUEST_TIMESTAMP))
             current_time = float(datetime.utcnow().timestamp())
+            # Change to TO_DAYS
             diff_time  = (current_time - request_time)//TO_MINUTES
 
             acronym = item.get('Acronym')
@@ -98,8 +100,10 @@ def lambda_handler(event, context):
             team_domain = item.get('TeamDomain')
             approvers_with_answer = item.get(APPROVERS_STR, []) + item.get(DENIERS_STR, [])
 
+            # Change to 30 
             if diff_time == 1:
                 send_reminder(acronym, definition, meaning, notes, user_id, user_name, team_domain, approvers_with_answer)
+            # Change to 60
             elif diff_time == 2:
                 update_form_closed(item)
                 response = table.delete_item(
