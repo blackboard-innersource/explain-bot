@@ -169,7 +169,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                 "ts": ts if update == True else None
             }
 
-def create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name):
+def create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, approvers):
 
     user_name_capitalized = " ".join(user_name)
     date_requested = date.today().strftime("%d/%m/%Y")
@@ -178,7 +178,7 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
     if meaning is "":
         meaning = "-"
 
-    for approver in APPROVERS:
+    for approver in approvers:
         if approver != user_id:
 
             #Send approval request
@@ -373,7 +373,7 @@ def lambda_handler(event, context):
     
     user_name_capitalized = " ".join(user_name)
     status_code = define(acronym,definition,meaning,notes,return_url,user_id,user_name_capitalized,team_domain)
-    create_approval_request(acronym,definition,meaning,notes,team_domain,user_id,user_name)
+    create_approval_request(acronym,definition,meaning,notes,team_domain,user_id,user_name, APPROVERS)
     notify_pending_approval(user_id,acronym)
     
     return {
@@ -383,8 +383,8 @@ def lambda_handler(event, context):
 def update_form_closed(item):
     try:
         approvers_message_list = item['ApproverMessages']
-
-        for item in approvers_message_list:
+        acronym = item['Acronym']
+        for reg in approvers_message_list:
             modal = {
                 "blocks": [
                     {
@@ -395,8 +395,8 @@ def update_form_closed(item):
                         }
                     }
                 ],
-                "channel": item['channel'],
-                "ts": item['ts']
+                "channel": reg['channel'],
+                "ts": reg['ts']
             }
 
             headers = {
