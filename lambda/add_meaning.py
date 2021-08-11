@@ -10,6 +10,7 @@ import boto3
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 import urllib3
+from datetime import datetime
 from datetime import date
 
 # Get the service resource.
@@ -25,6 +26,7 @@ REQUESTER_STR = 'Requester'
 APPROVAL_STR = 'Approval'
 APPROVAL_STATUS_PENDING = 'pending'
 APPROVAL_STATUS_APPROVED = 'approved'
+REQUEST_TIMESTAMP = 'RequestTimestamp'
 REVIEWERS_MAX = 3
 
 table = dynamodb.Table(TABLE_NAME)
@@ -52,7 +54,7 @@ def explain(acronym):
 
 
 @lru_cache(maxsize=60)
-def define(acronym, definition, meaning, notes, response_url, user_id):
+def define(acronym, definition, meaning, notes, response_url, user_id, user_name, team_domain):
     results = table.put_item(
         Item={
             'Acronym': acronym,
@@ -60,7 +62,10 @@ def define(acronym, definition, meaning, notes, response_url, user_id):
             'Meaning': meaning,
             'Notes': notes,
             REQUESTER_STR: user_id,
-            APPROVAL_STR: APPROVAL_STATUS_PENDING
+            'RequesterName': user_name,
+            APPROVAL_STR: APPROVAL_STATUS_PENDING,
+            REQUEST_TIMESTAMP : int(datetime.utcnow().timestamp()),
+            'TeamDomain' : team_domain
         }
     )
 
@@ -173,7 +178,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
     }
 
 
-def create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name):
+def create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, approvers):
     user_name_capitalized = " ".join(user_name)
     date_requested = date.today().strftime("%d/%m/%Y")
     approver_messages = []
@@ -181,8 +186,8 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
     if meaning is "":
         meaning = "-"
 
-    for approver in APPROVERS:
-        if approver != user_id or approver == user_id:
+    for approver in approvers:
+        if approver != user_id:
 
             # Send approval request
             modal = get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name_capitalized,
@@ -202,6 +207,7 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
 
             if data.get('ok'):
                 message_data = {
+                    'approver': approver,
                     'channel': data.get('channel'),
                     'ts': data.get('ts')
                 }
@@ -385,9 +391,10 @@ def lambda_handler(event, context):
     # Define acronym (persist in DB) and send approval request to approvers
     return_url = payload['response_urls'][0]['response_url']
 
-    status_code = define(acronym, definition, meaning, notes, return_url, user_id)
-    create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name)
-    notify_pending_approval(user_id, acronym)
+    user_name_capitalized = " ".join(user_name)
+    status_code = define(acronym,definition,meaning,notes,return_url,user_id,user_name_capitalized,team_domain)
+    create_approval_request(acronym,definition,meaning,notes,team_domain,user_id,user_name, APPROVERS)
+    notify_pending_approval(user_id,acronym)
 
     return {
         "statusCode": status_code
@@ -397,7 +404,7 @@ def lambda_handler(event, context):
 def update_form_closed(item):
     try:
         approvers_message_list = item['ApproverMessages']
-
+        acronym = item['Acronym']
         for element in approvers_message_list:
             modal = {
                 "attachments": [
@@ -408,8 +415,7 @@ def update_form_closed(item):
                                 "type": "section",
                                 "text": {
                                     "type": "mrkdwn",
-                                    "text": "*The request for: " + item[
-                                        'Acronym'] + " is completed.*\n Thanks for contributing, the voting is closed!"
+                                    "text": "*The request for: " + acronym + " is completed.*\n Thanks for contributing, the voting is closed!"
                                 }
                             }
                         ]
