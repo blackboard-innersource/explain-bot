@@ -64,6 +64,7 @@ def explain(acronym):
                 }
             ]
 
+
             return definition
         elif approval == APPROVAL_STATUS_PENDING:
             return returnSingleBlocks(f'{acronym} is waiting for approval.')
@@ -272,6 +273,7 @@ def check_hash(event):
 
     return hmac.compare_digest(my_signature, slack_signature)
 
+
 def returnSingleBlocks(text):
     return [
         {
@@ -282,3 +284,4 @@ def returnSingleBlocks(text):
             }
         }
     ]
+

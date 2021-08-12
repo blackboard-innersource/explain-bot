@@ -437,6 +437,7 @@ def update_form_closed(item):
     except:
         print("Error in update_form_closed")
 
+
 def update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, channel,
                          decision, message_ts):
     if meaning is "":
@@ -545,3 +546,4 @@ def check_hash(event):
     print("Slack signature: " + slack_signature)
 
     return hmac.compare_digest(my_signature, slack_signature)
+
