@@ -36,6 +36,14 @@ def explain(acronym):
     if len(results['Items']) > 0:
         item = results['Items'][0]
 
+        meaning = item['Definition']
+        if ( meaning is None or meaning == "" ):
+            meaning = "-"
+
+        notes = item['Notes']
+        if ( notes is None or notes == "" ):
+            notes = "-"
+
         approval = item.get(APPROVAL_STR)
         if approval is None or approval == APPROVAL_STATUS_APPROVED:
             definition = [
@@ -52,11 +60,11 @@ def explain(acronym):
                         },
                         {
                             "type": "mrkdwn",
-                            "text": "*Meaning:*\n" + f"{item['Meaning']}" if item['Meaning'] else "Not meaning found."
+                            "text": "*Meaning:*\n" + meaning
                         },
                         {
                             "type": "mrkdwn",
-                            "text": "*Notes:*\n" + item['Notes']
+                            "text": "*Notes:*\n" + notes
                         }
                     ]
                 }
@@ -107,10 +115,17 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                         "type": "divider"
                     },
                     {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "*Acronym*\n" + acronym
+                        "type": "input",
+                        "block_id": "acronym_block",
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "acronym_input",
+                            "multiline": False,
+                            "initial_value": acronym
+                        },
+                        "label": {
+                            "type": "plain_text",
+                            "text": "Acronym"
                         }
                     },
                     {
