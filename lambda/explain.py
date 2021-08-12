@@ -36,7 +36,7 @@ def explain(acronym):
     if len(results['Items']) > 0:
         item = results['Items'][0]
 
-        meaning = item['Definition']
+        meaning = item['Meaning']
         if ( meaning is None or meaning == "" ):
             meaning = "-"
 
