@@ -40,25 +40,23 @@ def explain(acronym):
         if approval is None or approval == APPROVAL_STATUS_APPROVED:
             definition = [
                 {
-                    "type": "header",
-                    "text": {
-                        "type": "plain_text",
-                        "text": f"{item['Acronym']}: \"{item['Definition']}\"",
-                    }
-                },
-                {
                     "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": f"{item['Meaning']}" if item['Meaning'] else "Not meaning found."
-                    }
-                },
-                {
-                    "type": "context",
-                    "elements": [
+                    "fields": [
                         {
-                            "type": "plain_text",
-                            "text": f"{item['Notes']}" if item['Notes'] else "No additional information."
+                            "type": "mrkdwn",
+                            "text": "*Acronym:*\n " + item['Acronym']
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": "*Definition:*\n" + item['Definition']
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": "*Meaning:*\n" + f"{item['Meaning']}" if item['Meaning'] else "Not meaning found."
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": "*Notes:*\n" + item['Notes']
                         }
                     ]
                 }
@@ -68,7 +66,7 @@ def explain(acronym):
             return definition
         elif approval == APPROVAL_STATUS_PENDING:
             return returnSingleBlocks(f'{acronym} is waiting for approval.')
-    return returnSingleBlocks(f'{acronym} is not defined. If you figured it out let me know.')
+    return returnSingleBlocks(f'{acronym} is not defined.')
 
 
 def create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id):
@@ -102,24 +100,17 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": f"Define '{acronym}' using the form below."
+                            "text": f"Define *{acronym}* using the form below."
                         }
                     },
                     {
                         "type": "divider"
                     },
                     {
-                        "type": "input",
-                        "block_id": "acronym_block",
-                        "element": {
-                            "type": "plain_text_input",
-                            "action_id": "acronym_input",
-                            "multiline": False,
-                            "initial_value": acronym
-                        },
-                        "label": {
-                            "type": "plain_text",
-                            "text": "Acronym"
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "*Acronym*\n" + acronym
                         }
                     },
                     {
@@ -130,6 +121,7 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                             "action_id": "definition_input",
                             "multiline": False,
                             "initial_value": definition
+                            "min_length": 1
                         },
                         "label": {
                             "type": "plain_text",
