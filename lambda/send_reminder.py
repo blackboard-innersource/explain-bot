@@ -66,16 +66,13 @@ def get_reminder_block(acronym, team_domain, approver, channel, ts):
                         "text": {
                             "type": "mrkdwn",
                             "text": f"You have a pending request for the acronym: *{acronym}*."
-                        },
-                        "accessory": {
-                            "type": "button",
-                            "text": {
-                                "type": "plain_text",
-                                "text": "Approve or Deny"
-                            },
-                            "value": "click_me_123",
-                            "url": f"https://{team_domain}.slack.com/archives/{channel}/p{ts.replace('.','')}",
-                            "action_id": "button-action"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "<https://" + team_domain + ".slack.com/archives/" + channel + "/p" + ts.replace(".", "") + ">"
                         }
                     }
                 ]
