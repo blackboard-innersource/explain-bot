@@ -120,7 +120,7 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                             "type": "plain_text_input",
                             "action_id": "definition_input",
                             "multiline": False,
-                            "initial_value": definition
+                            "initial_value": definition,
                             "min_length": 1
                         },
                         "label": {
