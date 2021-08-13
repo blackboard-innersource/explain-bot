@@ -459,7 +459,7 @@ def update_form_closed(item):
                                 "type": "section",
                                 "text": {
                                     "type": "mrkdwn",
-                                    "text": f"*The request for *{acronym}* is completed.*\n Thanks for contributing, the voting is closed!"
+                                    "text": f"*The request for {acronym} is completed.*\n Thanks for contributing, the voting is closed!"
                                 }
                             }
                         ]
