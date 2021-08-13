@@ -9,6 +9,7 @@ import boto3
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 import urllib3
+import re
 
 # Get the service resource.
 dynamodb = boto3.resource('dynamodb')
@@ -212,6 +213,10 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
     return returnSingleBlocks(f'Launching definition modal for acronym *{acronym}*...')
 
 
+def cleanup_acronym(acronym):
+    return re.sub("[^0-9a-zA-Z]+", "", acronym.upper())
+
+
 def lambda_handler(event, context):
     print("explain")
 
@@ -231,7 +236,7 @@ def lambda_handler(event, context):
     trigger_id = msg_map.get('trigger_id', 'err')
 
     if (len(text) >= 2):
-        acronym = text[0].upper()
+        acronym = cleanup_acronym(text[0])
         definition = ""
         i = 1
         for i in range(1, len(text)):
@@ -242,9 +247,9 @@ def lambda_handler(event, context):
         response = create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id)
 
     elif (len(text) == 1):
-        acronym = text[0].upper()
+        acronym = cleanup_acronym(text[0])
         
-        if (len(acronym) == 0 or acronym.upper() == "HELP"):
+        if (len(acronym) == 0 or acronym == "HELP"):
             response = returnSingleBlocks("*Usage* \n`/define <acronym>` to see the acronym information \n`/define <acronym> <definition>` to add a new acronym")
 
         else:
