@@ -11,7 +11,7 @@ On the subsequent page, simply click the _Create New App_ button. Give your app 
 
 On the page that loads when you create your application, you will see a form with _App Credentials_. Click _Show_ for your Signing Secret and copy that value to the clipboard.
 
-I this project, we need to manually store secrets as plain text in SecretsManager in the aws account. Please create SLACK_SIGNING_SECRET and it will be available for access in the code.
+In this project, we need to manually store secrets as plain text in SecretsManager in the aws account. Please create SLACK_SIGNING_SECRET and it will be available for access in the code.
 
 Next, click _Slash Commands_ in the left-hand navigation and click _Create New Command_. Enter a name for your command **WITH** the slash. I called it `/define` but the app doesn't care what you call it. In the URL field, put a dummy URL. We will fill this in after we deploy the app. Give it a short description, which is required, and then a usage hint if you like, the click _Save_.
 
