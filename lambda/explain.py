@@ -217,6 +217,12 @@ def cleanup_acronym(acronym):
     return re.sub("[^0-9a-zA-Z]+", "", acronym.upper())
 
 
+def help_response():
+    text = ("Hi there, I'm Define Bot :wave: Here are some quick tips to get you started! \n"
+            "`/define <acronym>` to see the acronym information \n"
+            "`/define <acronym> <definition>` to add a new acronym")
+    return returnSingleBlocks(text)
+
 def lambda_handler(event, context):
     print("explain")
 
@@ -250,7 +256,7 @@ def lambda_handler(event, context):
         acronym = cleanup_acronym(text[0])
         
         if (len(acronym) == 0 or acronym == "HELP"):
-            response = returnSingleBlocks("*Usage* \n`/define <acronym>` to see the acronym information \n`/define <acronym> <definition>` to add a new acronym")
+            response = help_response()
 
         else:
             response = explain(acronym)
