@@ -209,7 +209,7 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
 
         print("response: " + str(response.status) + " " + str(response.data))
 
-    return returnSingleBlocks("Launching definition modal...")
+    return returnSingleBlocks(f'Defining acronym *{acronym}*...')
 
 
 def lambda_handler(event, context):
