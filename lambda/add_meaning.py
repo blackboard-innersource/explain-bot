@@ -13,6 +13,7 @@ import urllib3
 from datetime import datetime
 from datetime import date
 from explain import attachment_color
+import re
 
 # Get the service resource.
 dynamodb = boto3.resource('dynamodb')
@@ -49,7 +50,7 @@ def explain(acronym):
                  item['Notes']
 
     except:
-        retval = f'{acronym} is not defined.'
+        retval = f'Acronym *{acronym}* is not defined.'
 
     return retval
 
@@ -317,6 +318,11 @@ def notify_invalid_acronym(user_id, acronym):
     response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
     print("response: " + str(response.status) + " " + str(response.data))
 
+
+def cleanup_acronym(acronym):
+    return re.sub("[^0-9a-zA-Z]+", "", acronym.upper())
+
+
 def get_data_from_payload(payload):
     acronym = ""
     definition = ""
@@ -347,6 +353,9 @@ def get_data_from_payload(payload):
         user_name_block = payload['message']['attachments'][0]['blocks'][0]['text']['text']
         user_name = user_name_block[user_name_block.index("|") + 1:user_name_block.index(" - New acronym request")]
         user_id = user_name_block[user_name_block.index("/team/") + 6:user_name_block.index("|")]
+
+    # Remove special characters
+    acronym = cleanup_acronym(acronym)
 
     print("acronym: " + acronym)
     print("definition: " + definition)
@@ -450,7 +459,7 @@ def update_form_closed(item):
                                 "type": "section",
                                 "text": {
                                     "type": "mrkdwn",
-                                    "text": f"*The request for '{acronym}' is completed.*\n Thanks for contributing, the voting is closed!"
+                                    "text": f"*The request for *{acronym}* is completed.*\n Thanks for contributing, the voting is closed!"
                                 }
                             }
                         ]
