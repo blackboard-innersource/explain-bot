@@ -49,7 +49,7 @@ def explain(acronym):
                  item['Notes']
 
     except:
-        retval = f'{acronym} is not defined.'
+        retval = f'Acronym *{acronym}* is not defined.'
 
     return retval
 
@@ -450,7 +450,7 @@ def update_form_closed(item):
                                 "type": "section",
                                 "text": {
                                     "type": "mrkdwn",
-                                    "text": f"*The request for '{acronym}' is completed.*\n Thanks for contributing, the voting is closed!"
+                                    "text": f"*The request for *{acronym}* is completed.*\n Thanks for contributing, the voting is closed!"
                                 }
                             }
                         ]
