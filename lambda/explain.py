@@ -16,6 +16,8 @@ dynamodb = boto3.resource('dynamodb')
 
 # set environment variable
 TABLE_NAME = os.environ['TABLE_NAME']
+# Dev or Prod
+stage = os.environ['STAGE'].lower()
 APPROVAL_STR = 'Approval'
 APPROVAL_STATUS_APPROVED = 'approved'
 APPROVAL_STATUS_PENDING = 'pending'
@@ -24,9 +26,9 @@ table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
 ssm = boto3.client('ssm', region_name='us-east-2')
 
-sss = ssm.get_parameter(Name='/explainbot/parameters/prod/slack_signing_secret', WithDecryption=True)
+sss = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/slack_signing_secret', WithDecryption=True)
 slack_signing_secret = sss['Parameter']['Value']
-oauth = ssm.get_parameter(Name='/explainbot/parameters/prod/oauth_token', WithDecryption=True)
+oauth = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/oauth_token', WithDecryption=True)
 OAUTH_TOKEN = oauth['Parameter']['Value']
 
 def get_body(event):

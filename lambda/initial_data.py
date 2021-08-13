@@ -7,11 +7,13 @@ dynamodb = boto3.resource('dynamodb')
 table_name = os.environ['TABLE_NAME']
 table = dynamodb.Table(table_name)
 
+stage = os.environ['STAGE'].lower()
+
 s3 = boto3.client('s3')
 
 def lambda_handler(event, context):
 
-    bucket = 'explainbot-initial-data-prod'
+    bucket = 'explainbot-initial-data-'+stage
     file_key = 'acronyms.csv'
 
     csvfile = s3.get_object(Bucket=bucket, Key=file_key)

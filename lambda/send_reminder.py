@@ -16,15 +16,17 @@ dynamodb = boto3.resource('dynamodb')
 table_name = os.environ['TABLE_NAME']
 table = dynamodb.Table(table_name)
 
+stage = os.environ['STAGE'].lower()
+
 TO_DAYS = 60*60*24
 REQUEST_TIMESTAMP = 'RequestTimestamp'
 APPROVERS_STR = 'Approvers'
 DENIERS_STR = 'Deniers'
 
 ssm = boto3.client('ssm', region_name='us-east-2')
-oauth = ssm.get_parameter(Name='/explainbot/parameters/prod/oauth_token', WithDecryption=True)
+oauth = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/oauth_token', WithDecryption=True)
 OAUTH_TOKEN = oauth['Parameter']['Value']
-approver_str = ssm.get_parameter(Name='/explainbot/parameters/prod/approvers')
+approver_str = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/approvers')
 APPROVERS = approver_str['Parameter']['Value'].split(',')
 
 def send_reminder(item):

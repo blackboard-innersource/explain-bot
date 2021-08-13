@@ -17,7 +17,7 @@ class ExplainBotLambdaStack(cdk.Stack):
     explain_bot_lambda: _lambda.Function
     add_meaning_lambda: _lambda.Function
 
-    def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: cdk.Construct, construct_id: str, stage: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # Define Lambda function
@@ -35,7 +35,10 @@ class ExplainBotLambdaStack(cdk.Stack):
             runtime=_lambda.Runtime.PYTHON_3_8,
             code=_lambda.Code.asset('lambda'),
             handler='explain.lambda_handler',
-            role = lambda_role
+            role = lambda_role,
+            environment = {
+                'STAGE': stage
+            }
         )
 
         self.add_meaning_lambda = _lambda.Function(
@@ -43,7 +46,10 @@ class ExplainBotLambdaStack(cdk.Stack):
             runtime=_lambda.Runtime.PYTHON_3_8,
             code=_lambda.Code.asset('lambda'),
             handler='add_meaning.lambda_handler',
-            role= lambda_role
+            role= lambda_role,
+            environment = {
+                'STAGE': stage
+            }
         )
 
 class ExplainBotApiStack(cdk.Stack):
@@ -125,7 +131,8 @@ class ExplainBotInitialDataStack(cdk.Stack):
     def __init__(
             self, 
             scope: cdk.Construct, 
-            construct_id: str, 
+            construct_id: str,
+            stage: str,
             table: _dynamo.Table,
             **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -147,7 +154,8 @@ class ExplainBotInitialDataStack(cdk.Stack):
             handler='initial_data.lambda_handler',
             timeout=cdk.Duration.minutes(5),
             environment = {
-                'TABLE_NAME': table.table_name
+                'TABLE_NAME': table.table_name,
+                'STAGE': stage
             }
         )
 
@@ -170,6 +178,7 @@ class ExplainBotCloudWatchStack(cdk.Stack):
             self, 
             scope: cdk.Construct, 
             construct_id: str,
+            stage: str,
             table: _dynamo.Table,
             **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -183,7 +192,8 @@ class ExplainBotCloudWatchStack(cdk.Stack):
             handler='send_reminder.lambda_handler',
             timeout=cdk.Duration.minutes(5),
             environment = {
-                'TABLE_NAME': table.table_name
+                'TABLE_NAME': table.table_name,
+                'STAGE': stage
             }
         )
 
@@ -199,10 +209,10 @@ class ExplainBotCloudWatchStack(cdk.Stack):
 
 class ExplainSlackBotStack(cdk.Stack):
 
-    def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: cdk.Construct, construct_id: str, stage: str,  **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        lambda_stack = ExplainBotLambdaStack(self, "LambdaStack")
+        lambda_stack = ExplainBotLambdaStack(self, "LambdaStack", stage)
         api_stack = ExplainBotApiStack(
             self, "ApiStack", 
             explain_bot_lambda=lambda_stack.explain_bot_lambda, 
@@ -218,11 +228,13 @@ class ExplainSlackBotStack(cdk.Stack):
 
         ExplainBotInitialDataStack(
             self, "InitialDataStack",
+            stage = stage,
             table = database_stack.table,
         )
 
         ExplainBotCloudWatchStack(
             self, "ReminderStack",
+            stage = stage,
             table = database_stack.table
         )
 

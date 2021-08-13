@@ -28,7 +28,7 @@ class ExplainSlackBotPipelineStack(cdk.Stack):
                 oauth_token=cdk.SecretValue.secrets_manager('GITHUB_TOKEN_NAME'),
                 owner='blackboard-innersource',
                 repo='explain-bot',
-                branch='feature/prod',
+                branch='develop',
                 trigger=cpactions.GitHubTrigger.POLL
             ),
             synth_action=SimpleSynthAction(
@@ -37,6 +37,15 @@ class ExplainSlackBotPipelineStack(cdk.Stack):
                     install_command='npm install -g aws-cdk && pip install -r requirements.txt',
                     synth_command='cdk synth'
             )
+        )
+
+        dev_stage = pipeline.add_application_stage(ExplainSlackBotStage(self, 'Dev', env={
+            'account': explainbot_account,
+            'region': 'us-east-2'
+        }))
+
+        dev_stage.add_manual_approval_action(
+            action_name = 'PromoteToProd'
         )
 
         pipeline.add_application_stage(ExplainSlackBotStage(self, 'Prod', env={

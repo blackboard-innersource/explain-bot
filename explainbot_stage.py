@@ -5,6 +5,6 @@ class ExplainSlackBotStage(cdk.Stage):
     def __init__(self, scope: cdk.Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
-        service = ExplainSlackBotStack(self, 'WebService')
+        service = ExplainSlackBotStack(self, 'WebService', id)
 
         self.url_output = service.url_output
