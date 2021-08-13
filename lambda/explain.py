@@ -73,8 +73,8 @@ def explain(acronym):
 
             return definition
         elif approval == APPROVAL_STATUS_PENDING:
-            return returnSingleBlocks(f'{acronym} is waiting for approval.')
-    return returnSingleBlocks(f'{acronym} is not defined.')
+            return returnSingleBlocks(f'Acronym *{acronym}* is waiting for approval.')
+    return returnSingleBlocks(f'Acronym *{acronym}* is not defined.')
 
 
 def create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id):
@@ -254,7 +254,7 @@ def lambda_handler(event, context):
     print(str(command) + ' ' + str(text) + ' -> ' + str(response) + ',original: ' + str(msg_map))
 
     return {
-        "response_type": "in_channel",
+        "response_type": "ephemeral",
         "attachments": [
             {
                 "color": attachment_color,
