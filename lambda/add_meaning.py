@@ -300,7 +300,7 @@ def notify_invalid_acronym(user_id, acronym):
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "The acronym for" + acronym + "is already defined."
+                            "text": "*Invalid request:* The acronym " + acronym + "is already defined."
                         }
                     }
                 ]
