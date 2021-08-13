@@ -28,7 +28,7 @@ class ExplainSlackBotPipelineStack(cdk.Stack):
                 oauth_token=cdk.SecretValue.secrets_manager('GITHUB_TOKEN_NAME'),
                 owner='blackboard-innersource',
                 repo='explain-bot',
-                branch='feature/add-approval-workflow',
+                branch='feature/prod',
                 trigger=cpactions.GitHubTrigger.POLL
             ),
             synth_action=SimpleSynthAction(
@@ -39,7 +39,7 @@ class ExplainSlackBotPipelineStack(cdk.Stack):
             )
         )
 
-        pipeline.add_application_stage(ExplainSlackBotStage(self, 'PreProd', env={
+        pipeline.add_application_stage(ExplainSlackBotStage(self, 'Prod', env={
             'account': explainbot_account,
-            'region': 'us-east-1'
+            'region': 'us-east-2'
         }))
