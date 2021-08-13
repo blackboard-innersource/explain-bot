@@ -243,11 +243,12 @@ def lambda_handler(event, context):
 
     elif (len(text) == 1):
         acronym = text[0].upper()
+        
+        if (len(acronym) == 0 or acronym.upper() == "HELP"):
+            response = returnSingleBlocks("*Usage* \n`/define <acronym>` to see the acronym information \n`/define <acronym> <definition>` to add a new acronym")
 
-        response = explain(acronym)
-
-    else:
-        response = returnSingleBlocks("Usage: /define <acronym> or /define <acronym> <definition>")
+        else:
+            response = explain(acronym)
 
     # logging
     print(str(command) + ' ' + str(text) + ' -> ' + str(response) + ',original: ' + str(msg_map))
@@ -286,7 +287,7 @@ def returnSingleBlocks(text):
         {
             "type": "section",
             "text": {
-                "type": "plain_text",
+                "type": "mrkdwn",
                 "text": text
             }
         }
