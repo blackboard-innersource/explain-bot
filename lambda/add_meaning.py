@@ -288,6 +288,34 @@ def notify_pending_approval(user_id, acronym):
     response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
     print("response: " + str(response.status) + " " + str(response.data))
 
+def notify_invalid_acronym(user_id, acronym):
+    print("Sending invalid acronym notification...")
+    body = {
+        "channel": user_id,
+        "attachments": [
+            {
+                "color": attachment_color,
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "The acronym for" + acronym + "is already defined."
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OAUTH_TOKEN
+    }
+    print("headers: " + str(headers))
+
+    response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
+    print("response: " + str(response.status) + " " + str(response.data))
 
 def get_data_from_payload(payload):
     acronym = ""
@@ -392,9 +420,16 @@ def lambda_handler(event, context):
     return_url = payload['response_urls'][0]['response_url']
 
     user_name_capitalized = " ".join(user_name)
-    status_code = define(acronym, definition, meaning, notes, return_url, user_id,user_name_capitalized,team_domain)
-    create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, APPROVERS)
-    notify_pending_approval(user_id,acronym)
+    status_code = '200'
+    results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+
+    
+    if len( results['Items'] ) == 0:
+        status_code = define(acronym, definition, meaning, notes, return_url, user_id,user_name_capitalized,team_domain)
+        create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, APPROVERS)
+        notify_pending_approval(user_id,acronym)
+    else:
+        notify_invalid_acronym(user_id,acronym)
 
     return {
         "statusCode": status_code
