@@ -56,24 +56,34 @@ def explain(acronym):
 
 @lru_cache(maxsize=60)
 def define(acronym, definition, meaning, notes, response_url, user_id, user_name, team_domain):
-    results = table.put_item(
-        Item={
-            'Acronym': acronym,
-            'Definition': definition,
-            'Meaning': meaning,
-            'Notes': notes,
-            REQUESTER_STR: user_id,
-            'RequesterName': user_name,
-            APPROVAL_STR: APPROVAL_STATUS_PENDING,
-            REQUEST_TIMESTAMP: int(datetime.utcnow().timestamp()),
-            'TeamDomain': team_domain
-        }
-    )
+    results_validation = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
 
-    print(str(results))
+    try:
+        item = results_validation['Items'][0]
+        results_validation = '403'
+        print( "Duplicated" )
 
-    result = results['ResponseMetadata']['HTTPStatusCode']
-    print("Result: " + str(result))
+    result = ""
+    if results_validation != '403':
+        results = table.put_item(
+            Item={
+                'Acronym': acronym,
+                'Definition': definition,
+                'Meaning': meaning,
+                'Notes': notes,
+                REQUESTER_STR: user_id,
+                'RequesterName': user_name,
+                APPROVAL_STR: APPROVAL_STATUS_PENDING,
+                REQUEST_TIMESTAMP: int(datetime.utcnow().timestamp()),
+                'TeamDomain': team_domain
+            }
+        )
+        result = results['ResponseMetadata']['HTTPStatusCode']
+        print("Result: " + str(result))
+    else:
+        result = '403'
+ 
+    print(str(result))
 
     headers = {
         'Content-Type': 'application/plain-text',
