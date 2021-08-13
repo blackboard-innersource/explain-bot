@@ -19,7 +19,7 @@ dynamodb = boto3.resource('dynamodb')
 # set environment variable
 TABLE_NAME = os.environ['TABLE_NAME']
 OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
-APPROVERS = os.environ['APPROVERS'].split(',')
+
 APPROVERS_STR = 'Approvers'
 DENIERS_STR = 'Deniers'
 REQUESTER_STR = 'Requester'
@@ -31,6 +31,15 @@ REVIEWERS_MAX = 3
 
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
+
+ssm = boto3.client('ssm', region_name='us-east-2')
+sss = ssm.get_parameter(Name='/explainbot/parameters/prod/slack_signing_secret', WithDecryption=True)
+slack_signing_secret = sss['Parameter']['Value']
+oauth = ssm.get_parameter(Name='/explainbot/parameters/prod/oauth_token', WithDecryption=True)
+OAUTH_TOKEN = oauth['Parameter']['Value']
+approver_str = ssm.get_parameter(Name='/explainbot/parameters/prod/approvers')
+APPROVERS = approver_str['Parameter']['Value'].split(',')
+
 
 def get_body(event):
     return base64.b64decode(str(event['body'])).decode('ascii')
@@ -513,7 +522,6 @@ def checkAlreadyReviewed(result, userId):
 
 
 def check_hash(event):
-  slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
   body = get_body(event)
   timestamp = event["headers"]['x-slack-request-timestamp']
   sig_basestring = 'v0:' + timestamp + ':' + body

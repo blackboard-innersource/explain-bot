@@ -11,7 +11,7 @@ s3 = boto3.client('s3')
 
 def lambda_handler(event, context):
 
-    bucket = 'explainbot-initial-data'
+    bucket = 'explainbot-initial-data-prod'
     file_key = 'acronyms.csv'
 
     csvfile = s3.get_object(Bucket=bucket, Key=file_key)

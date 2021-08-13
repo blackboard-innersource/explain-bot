@@ -16,14 +16,18 @@ dynamodb = boto3.resource('dynamodb')
 
 # set environment variable
 TABLE_NAME = os.environ['TABLE_NAME']
-OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
 APPROVAL_STR = 'Approval'
 APPROVAL_STATUS_APPROVED = 'approved'
 APPROVAL_STATUS_PENDING = 'pending'
 
 table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
+ssm = boto3.client('ssm', region_name='us-east-2')
 
+sss = ssm.get_parameter(Name='/explainbot/parameters/prod/slack_signing_secret', WithDecryption=True)
+slack_signing_secret = sss['Parameter']['Value']
+oauth = ssm.get_parameter(Name='/explainbot/parameters/prod/oauth_token', WithDecryption=True)
+OAUTH_TOKEN = oauth['Parameter']['Value']
 
 def get_body(event):
     return base64.b64decode(str(event['body'])).decode('ascii')
@@ -178,7 +182,6 @@ def create_modal(acronym,definition,user_name,channel_name,team_domain,trigger_i
 
 def lambda_handler(event, context):
     print("explain")
-    
     if check_hash(event) == False:
         print('Signature check failed')
         print('event: ' + str(event))
@@ -228,7 +231,6 @@ def lambda_handler(event, context):
 
 
 def check_hash(event):
-  slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
   body = get_body(event)
   timestamp = event["headers"]['x-slack-request-timestamp']
   sig_basestring = 'v0:' + timestamp + ':' + body

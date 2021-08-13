@@ -15,14 +15,17 @@ http = urllib3.PoolManager()
 dynamodb = boto3.resource('dynamodb')
 table_name = os.environ['TABLE_NAME']
 table = dynamodb.Table(table_name)
-APPROVERS = os.environ['APPROVERS'].split(',')
-OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
 
 TO_DAYS = 60*60*24
 REQUEST_TIMESTAMP = 'RequestTimestamp'
 APPROVERS_STR = 'Approvers'
 DENIERS_STR = 'Deniers'
 
+ssm = boto3.client('ssm', region_name='us-east-2')
+oauth = ssm.get_parameter(Name='/explainbot/parameters/prod/oauth_token', WithDecryption=True)
+OAUTH_TOKEN = oauth['Parameter']['Value']
+approver_str = ssm.get_parameter(Name='/explainbot/parameters/prod/approvers')
+APPROVERS = approver_str['Parameter']['Value'].split(',')
 
 def send_reminder(item):
     approvers_with_answer = item.get(APPROVERS_STR, []) + item.get(DENIERS_STR, [])

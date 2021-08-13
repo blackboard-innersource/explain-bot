@@ -16,42 +16,35 @@ class ExplainBotLambdaStack(cdk.Stack):
 
     explain_bot_lambda: _lambda.Function
     add_meaning_lambda: _lambda.Function
-    approvers: str
-    slack_signing_secret: str
-    oauth_token: str
 
     def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # Define Lambda function
-        self.slack_signing_secret=cdk.SecretValue.secrets_manager('SLACK_SIGNING_SECRET').to_string()
-        self.oauth_token=cdk.SecretValue.secrets_manager('OAUTH_TOKEN').to_string()
-        self.approvers=cdk.SecretValue.secrets_manager('APPROVERS').to_string()
+        lambda_role = iam.Role(
+            self, "ExplainRole",
+            assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name(
+                "service-role/AWSLambdaBasicExecutionRole")]
+        )
+
+        lambda_role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AmazonSSMFullAccess'))
 
         self.explain_bot_lambda = _lambda.Function(
             self, "ExplainHandler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             code=_lambda.Code.asset('lambda'),
             handler='explain.lambda_handler',
-            environment = {
-                'SLACK_SIGNING_SECRET': self.slack_signing_secret,
-                'OAUTH_TOKEN' : self.oauth_token,
-                'APPROVERS' : self.approvers
-            }
+            role = lambda_role
         )
-        
+
         self.add_meaning_lambda = _lambda.Function(
             self, "AddMeaningHandler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             code=_lambda.Code.asset('lambda'),
             handler='add_meaning.lambda_handler',
-            environment = {
-                'SLACK_SIGNING_SECRET': self.slack_signing_secret,
-                'OAUTH_TOKEN' : self.oauth_token,
-                'APPROVERS' : self.approvers
-            }
+            role= lambda_role
         )
-
 
 class ExplainBotApiStack(cdk.Stack):
     def __init__(
@@ -155,7 +148,7 @@ class ExplainBotInitialDataStack(cdk.Stack):
             timeout=cdk.Duration.minutes(5),
             environment = {
                 'TABLE_NAME': table.table_name
-            },
+            }
         )
 
         table.grant_full_access(on_event)
@@ -178,9 +171,6 @@ class ExplainBotCloudWatchStack(cdk.Stack):
             scope: cdk.Construct, 
             construct_id: str,
             table: _dynamo.Table,
-            approvers: str,
-            oauth_token: str,
-            slack_signing_secret: str,
             **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
@@ -193,11 +183,8 @@ class ExplainBotCloudWatchStack(cdk.Stack):
             handler='send_reminder.lambda_handler',
             timeout=cdk.Duration.minutes(5),
             environment = {
-                'TABLE_NAME': table.table_name,
-                'APPROVERS': approvers,
-                'OAUTH_TOKEN': oauth_token,
-                'SLACK_SIGNING_SECRET': slack_signing_secret
-            },
+                'TABLE_NAME': table.table_name
+            }
         )
 
         table.grant_full_access(reminder_lambda)
@@ -236,10 +223,7 @@ class ExplainSlackBotStack(cdk.Stack):
 
         ExplainBotCloudWatchStack(
             self, "ReminderStack",
-            table = database_stack.table,
-            approvers = lambda_stack.approvers,
-            oauth_token = lambda_stack.oauth_token,
-            slack_signing_secret = lambda_stack.slack_signing_secret
+            table = database_stack.table
         )
 
 
