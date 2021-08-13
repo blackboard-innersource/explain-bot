@@ -100,6 +100,7 @@ class ExplainBotDatabaseStack(cdk.Stack):
             self, 
             scope: cdk.Construct, 
             construct_id: str,
+            stage: str,
             explain_bot_lambda: _lambda.Function,
             add_meaning_lambda: _lambda.Function,
             **kwargs) -> None:
@@ -108,7 +109,7 @@ class ExplainBotDatabaseStack(cdk.Stack):
                 # Define dynamoDb table
         acronym_table = _dynamo.Table(
             self, id="explainAcronymTable",
-            table_name="explainacronymtable",
+            table_name="explainacronymtable"+stage.lower(),
             partition_key=_dynamo.Attribute(name="Acronym", type=_dynamo.AttributeType.STRING),
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
@@ -222,6 +223,7 @@ class ExplainSlackBotStack(cdk.Stack):
 
         database_stack = ExplainBotDatabaseStack(
             self, "DatabaseStack",
+            stage = stage,
             explain_bot_lambda=lambda_stack.explain_bot_lambda, 
             add_meaning_lambda=lambda_stack.add_meaning_lambda
         )

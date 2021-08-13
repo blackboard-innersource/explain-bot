@@ -18,7 +18,6 @@ dynamodb = boto3.resource('dynamodb')
 
 # set environment variable
 TABLE_NAME = os.environ['TABLE_NAME']
-OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
 stage = os.environ['STAGE'].lower()
 
 APPROVERS_STR = 'Approvers'
