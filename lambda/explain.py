@@ -84,9 +84,9 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
         item = results['Items'][0]
 
         if item.get(APPROVAL_STR) == APPROVAL_STATUS_PENDING:
-            return returnSingleBlocks(item['Acronym'] + " is waiting for approval.")
+            return returnSingleBlocks(f'Acronym *{item["Acronym"]}* is waiting for approval.')
         else:
-            return returnSingleBlocks(item['Acronym'] + " is already defined as " + item['Definition'])
+            return returnSingleBlocks(f'Acronym *{item["Acronym"]}* is already defined as {item["Definition"]}')
 
     except:
 
