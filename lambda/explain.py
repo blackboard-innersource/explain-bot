@@ -166,7 +166,7 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                         },
                         "label": {
                             "type": "plain_text",
-                            "text": "Acronym Meaning"
+                            "text": "Acronym description:"
                         }
                     },
                     {
@@ -181,23 +181,8 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                         },
                         "label": {
                             "type": "plain_text",
-                            "text": "Any notes to help make it clearer?"
+                            "text": "Any aditional notes?"
                         }
-                    },
-                    {
-                        "block_id": "response_url_block",
-                        "type": "input",
-                        "optional": True,
-                        "label": {
-                            "type": "plain_text",
-                            "text": "Select a channel to post the result on",
-                        },
-                        "element": {
-                            "action_id": "response_url_input",
-                            "type": "conversations_select",
-                            "default_to_current_conversation": True,
-                            "response_url_enabled": True,
-                        },
                     }
                 ],
                 "type": "modal"
@@ -272,7 +257,7 @@ def lambda_handler(event, context):
     print(str(command) + ' ' + str(text) + ' -> ' + str(response) + ',original: ' + str(msg_map))
 
     return {
-        "response_type": "ephemeral",
+        "response_type": "in_channel",
         "attachments": [
             {
                 "color": attachment_color,
