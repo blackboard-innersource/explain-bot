@@ -187,12 +187,22 @@ class ExplainBotCloudWatchStack(cdk.Stack):
 
         lambda_schedule = _events.Schedule.rate(cdk.Duration.days(1))
 
+        reminder_role = iam.Role(
+            self, "ReminderRole",
+            assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name(
+                "service-role/AWSLambdaBasicExecutionRole")]
+        )
+
+        reminder_role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AmazonSSMFullAccess'))
+
         reminder_lambda = _lambda.Function(
             self, "SendReminderHandler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             code=_lambda.Code.asset('lambda'),
             handler='send_reminder.lambda_handler',
             timeout=cdk.Duration.minutes(5),
+            role= reminder_role,
             environment = {
                 'TABLE_NAME': table.table_name,
                 'STAGE': stage
