@@ -24,8 +24,10 @@ APPROVERS_STR = 'Approvers'
 DENIERS_STR = 'Deniers'
 
 ssm = boto3.client('ssm', region_name='us-east-2')
+
 oauth = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/oauth_token', WithDecryption=True)
 OAUTH_TOKEN = oauth['Parameter']['Value']
+
 approver_str = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/approvers')
 APPROVERS = approver_str['Parameter']['Value'].split(',')
 

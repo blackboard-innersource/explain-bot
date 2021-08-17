@@ -33,10 +33,13 @@ table = dynamodb.Table(TABLE_NAME)
 http = urllib3.PoolManager()
 
 ssm = boto3.client('ssm', region_name='us-east-2')
+
 sss = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/slack_signing_secret', WithDecryption=True)
 slack_signing_secret = sss['Parameter']['Value']
+
 oauth = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/oauth_token', WithDecryption=True)
 OAUTH_TOKEN = oauth['Parameter']['Value']
+
 approver_str = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/approvers')
 APPROVERS = approver_str['Parameter']['Value'].split(',')
 

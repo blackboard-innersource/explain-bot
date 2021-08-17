@@ -57,6 +57,7 @@ class ExplainBotApiStack(cdk.Stack):
             self, 
             scope: cdk.Construct, 
             construct_id: str, 
+            stage: str,
             explain_bot_lambda: _lambda.Function,
             add_meaning_lambda: _lambda.Function,
             **kwargs
@@ -65,7 +66,7 @@ class ExplainBotApiStack(cdk.Stack):
 
         # Define API Gateway and HTTP API
         explain_bot_api = _apigw2.HttpApi(
-            self, 'ExplainSlackBotApi'
+            self, 'ExplainSlackBotApi'+stage
         )
 
         self.url_output = cdk.CfnOutput(self, 'Url',
@@ -216,6 +217,7 @@ class ExplainSlackBotStack(cdk.Stack):
         lambda_stack = ExplainBotLambdaStack(self, "LambdaStack", stage)
         api_stack = ExplainBotApiStack(
             self, "ApiStack", 
+            stage = stage,
             explain_bot_lambda=lambda_stack.explain_bot_lambda, 
             add_meaning_lambda=lambda_stack.add_meaning_lambda
             )
