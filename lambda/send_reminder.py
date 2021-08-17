@@ -7,7 +7,7 @@ from boto3.dynamodb.conditions import Key
 import urllib3
 from datetime import datetime
 from datetime import date
-from add_meaning import update_form_closed, get_approval_form
+from add_meaning import update_form_closed, get_approval_form, notify_approval_response
 from explain import attachment_color
 
 http = urllib3.PoolManager()
@@ -98,11 +98,13 @@ def lambda_handler(event, context):
             current_time = float(datetime.utcnow().timestamp())
             diff_time = (current_time - request_time) // TO_DAYS
             acronym = item.get('Acronym')
+            requester_id = item.get('Requester')
 
             if diff_time == 30:
                 send_reminder(item)
             elif diff_time == 60:
                 update_form_closed(item)
+                notify_approval_response(acronym, False, requester_id)
                 response = table.delete_item(
                     Key={
                         'Acronym': acronym
