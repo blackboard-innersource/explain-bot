@@ -68,7 +68,7 @@ def explain(acronym):
                         },
                         {
                             "type": "mrkdwn",
-                            "text": "*Meaning:*\n" + meaning
+                            "text": "*Description:*\n" + meaning
                         },
                         {
                             "type": "mrkdwn",
@@ -82,7 +82,7 @@ def explain(acronym):
             return definition
         elif approval == APPROVAL_STATUS_PENDING:
             return returnSingleBlocks(f'Acronym *{acronym}* is waiting for approval.')
-    return returnSingleBlocks(f'Acronym *{acronym}* is not defined.')
+    return returnSingleBlocks(f'Acronym *{acronym}* is not defined. Do you want to add it? Type `/define (acronym) +<definition>`')
 
 
 def create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id):

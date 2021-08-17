@@ -56,11 +56,11 @@ def explain(acronym):
     try:
         item = results['Items'][0]
 
-        retval = item['Acronym'] + " - " + item['Definition'] + "\n---\n*Meaning*: " + item['Meaning'] + "\n*Notes*: " + \
+        retval = item['Acronym'] + " - " + item['Definition'] + "\n---\n*Description*: " + item['Meaning'] + "\n*Notes*: " + \
                  item['Notes']
 
     except:
-        retval = f'Acronym *{acronym}* is not defined.'
+        retval = f'Acronym *{acronym}* is not defined. Do you want to add it? Type `/define (acronym) +<definition>`'
 
     return retval
 
@@ -136,7 +136,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                             },
                             {
                                 "type": "mrkdwn",
-                                "text": "*Meaning:*\n" + meaning
+                                "text": "*Description:*\n" + meaning
                             }
                         ]
                     },
