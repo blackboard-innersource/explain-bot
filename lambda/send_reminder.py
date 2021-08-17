@@ -65,14 +65,7 @@ def get_reminder_block(acronym, team_domain, approver, channel, ts):
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "*Reminder:*\nYou have a pending request for the acronym: " + acronym
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "Please click the link below to view the request.\n https://" + team_domain + ".slack.com/archives/" + channel + "/p" + ts.replace(".", "")
+                            "text": "*Reminder:*\nYou have a pending request for the acronym: *" + acronym + "*. Please click the link below to view the request.\n <View original request| https://" + team_domain + ".slack.com/archives/" + channel + "/p" + ts.replace(".", "") + ">"
                         }
                     }
                 ]
