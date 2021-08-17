@@ -181,7 +181,22 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                         },
                         "label": {
                             "type": "plain_text",
-                            "text": "Any aditional notes?"
+                            "text": "Any additional notes?"
+                        }
+                    },
+                    {
+                        "block_id": "response_url_block",
+                        "type": "input",
+                        "optional": True,
+                        "label": {
+                            "type": "plain_text",
+                            "text": "Select a channel to post the result on",
+                        },
+                        "element": {
+                            "action_id": "response_url_input",
+                            "type": "conversations_select",
+                            "default_to_current_conversation": True,
+                            "response_url_enabled": True,
                         }
                     }
                 ],
