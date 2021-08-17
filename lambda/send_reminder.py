@@ -28,10 +28,9 @@ ssm = boto3.client('ssm', region_name='us-east-2')
 oauth = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/oauth_token', WithDecryption=True)
 OAUTH_TOKEN = oauth['Parameter']['Value']
 
-approver_str = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/approvers')
-APPROVERS = approver_str['Parameter']['Value'].split(',')
-
 def send_reminder(item):
+    approver_str = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/approvers')
+    APPROVERS = approver_str['Parameter']['Value'].split(',')
     approvers_with_answer = item.get(APPROVERS_STR, []) + item.get(DENIERS_STR, [])
     approvers_missing = [approver for approver in APPROVERS if approver not in approvers_with_answer]
     approver_messages = item['ApproverMessages']
@@ -65,7 +64,7 @@ def get_reminder_block(acronym, team_domain, approver, channel, ts):
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "*Reminder:*\nYou have a pending request for the acronym: *" + acronym + "*. Please click the link below to view the request.\n <View original request| https://" + team_domain + ".slack.com/archives/" + channel + "/p" + ts.replace(".", "") + ">"
+                            "text": "*Reminder:*\nYou have a pending request for the acronym: *" + acronym + "*. Please click the link below to view the request.\n<https://" + team_domain + ".slack.com/archives/" + channel + "/p" + ts.replace(".", "") + "|View original request>"
                         }
                     }
                 ]

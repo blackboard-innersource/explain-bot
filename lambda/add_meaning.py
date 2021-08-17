@@ -197,6 +197,9 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
     if meaning is "":
         meaning = "-"
 
+    if notes is "":
+        notes = "-"
+
     for approver in approvers:
         if approver != user_id:
 
@@ -249,13 +252,18 @@ def notify_approval_response(acronym, approved, requester_id):
 
     body = {
         "channel": requester_id,
-        "blocks": [
+        "attachments": [
             {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": message
-                }
+                "color": attachment_color,
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": message
+                        }
+                    }
+                ]
             }
         ]
     }
@@ -357,7 +365,7 @@ def get_data_from_payload(payload):
         # Obtain the data from approve/deny payload structure
         acronym = payload['message']['attachments'][0]['blocks'][1]['fields'][0]['text'][12:]
         definition = payload['message']['attachments'][0]['blocks'][1]['fields'][2]['text'][14:]
-        meaning = payload['message']['attachments'][0]['blocks'][1]['fields'][3]['text'][11:]
+        meaning = payload['message']['attachments'][0]['blocks'][1]['fields'][3]['text'][13:]
         notes = payload['message']['attachments'][0]['blocks'][2]['text']['text'][9:]
         team_domain = payload['team']['domain']
         user_name_block = payload['message']['attachments'][0]['blocks'][0]['text']['text']
@@ -496,6 +504,9 @@ def update_approval_form(acronym, definition, meaning, notes, team_domain, user_
                          decision, message_ts):
     if meaning is "":
         meaning = "-"
+
+    if notes is "":
+        notes = "-"
 
     # Update approval message form
     modal = get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
