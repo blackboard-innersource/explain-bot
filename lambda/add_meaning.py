@@ -12,6 +12,8 @@ from boto3.dynamodb.conditions import Key
 import urllib3
 from datetime import datetime
 from datetime import date
+from explain import attachment_color
+import re
 
 # Get the service resource.
 dynamodb = boto3.resource('dynamodb')
@@ -43,28 +45,28 @@ OAUTH_TOKEN = oauth['Parameter']['Value']
 approver_str = ssm.get_parameter(Name='/explainbot/parameters/'+stage+'/approvers')
 APPROVERS = approver_str['Parameter']['Value'].split(',')
 
-
 def get_body(event):
     return base64.b64decode(str(event['body'])).decode('ascii')
 
+
 @lru_cache(maxsize=60)
 def explain(acronym):
-
     results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
 
     try:
         item = results['Items'][0]
-        
-        retval = item['Acronym'] + " - " + item['Definition'] + "\n---\n*Meaning*: " + item['Meaning'] +  "\n*Notes*: " + item['Notes']
-        
+
+        retval = item['Acronym'] + " - " + item['Definition'] + "\n---\n*Meaning*: " + item['Meaning'] + "\n*Notes*: " + \
+                 item['Notes']
+
     except:
-        retval = f'{acronym} is not defined.'
+        retval = f'Acronym *{acronym}* is not defined.'
 
     return retval
-    
+
+
 @lru_cache(maxsize=60)
 def define(acronym, definition, meaning, notes, response_url, user_id, user_name, team_domain):
-    
     results = table.put_item(
         Item={
             'Acronym': acronym,
@@ -74,120 +76,120 @@ def define(acronym, definition, meaning, notes, response_url, user_id, user_name
             REQUESTER_STR: user_id,
             'RequesterName': user_name,
             APPROVAL_STR: APPROVAL_STATUS_PENDING,
-            REQUEST_TIMESTAMP : int(datetime.utcnow().timestamp()),
-            'TeamDomain' : team_domain
+            REQUEST_TIMESTAMP: int(datetime.utcnow().timestamp()),
+            'TeamDomain': team_domain
         }
     )
 
     print(str(results))
-    
+
     result = results['ResponseMetadata']['HTTPStatusCode']
     print("Result: " + str(result))
-    
+
     headers = {
         'Content-Type': 'application/plain-text',
         'Authorization': 'Bearer ' + OAUTH_TOKEN
     }
     print("headers: " + str(headers))
-    
-    
+
     if result != 200:
-        body={
+        body = {
             "response_type": "in_channel",
             "text": 'Error (' + str(result) + ') defining ' + acronym,
         }
         print("body: " + str(body))
-        
+
         response = http.request('POST', response_url, body=json.dumps(body), headers=headers)
         print("response: " + str(response.status) + " " + str(response.data))
 
     return result
 
-def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, approver, ts, update):
+
+def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, approver,
+                      ts, update):
     return {
-                "attachments": [
+        "attachments": [
+            {
+                "color": attachment_color,
+                "blocks": [
                     {
-                        "color": "#000000",
-                        "blocks": [
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "*You have a new request:*\n<https://" + team_domain + ".slack.com/team/" + user_id + "|" + user_name + " - New acronym request>"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "fields": [
                             {
-                                "type": "section",
-                                "text": {
-                                    "type": "mrkdwn",
-                                    "text": "*You have a new request:*\n<https://" + team_domain + ".slack.com/team/" + user_id + "|" + user_name + " - New acronym request>"
-                                }
+                                "type": "mrkdwn",
+                                "text": "*Acronym:*\n " + acronym
                             },
                             {
-                                "type": "section",
-                                "fields": [
-                                    {
-                                        "type": "mrkdwn",
-                                        "text": "*Acronym:*\n " + acronym
-                                    },
-                                    {
-                                        "type": "mrkdwn",
-                                        "text": "*When:*\nSubmitted " + date_requested
-                                    },
-                                    {
-                                        "type": "mrkdwn",
-                                        "text": "*Definition:*\n" + definition
-                                    },
-                                    {
-                                        "type": "mrkdwn",
-                                        "text": "*Meaning:*\n" + meaning
-                                    }
-                                ]
+                                "type": "mrkdwn",
+                                "text": "*When:*\nSubmitted " + date_requested
                             },
                             {
-                                "type": "section",
-                                "text": {
-                                    "type": "mrkdwn",
-                                    "text": "*Notes:*\n" + notes
-                                }
+                                "type": "mrkdwn",
+                                "text": "*Definition:*\n" + definition
                             },
                             {
-                                "type": "divider"
-                            },
-                            {
-                                "type": "actions",
-                                "elements": [
-                                    {
-                                        "type": "button",
-                                        "text": {
-                                            "type": "plain_text",
-                                            "emoji": True,
-                                            "text": "Approve"
-                                        },
-                                        "style": "primary",
-                                        "value": "Approve"
-                                    },
-                                    {
-                                        "type": "button",
-                                        "text": {
-                                            "type": "plain_text",
-                                            "emoji": True,
-                                            "text": "Deny"
-                                        },
-                                        "style": "danger",
-                                        "value": "Deny"
-                                    }
-                                ]
-                            } if update == False else 
-                            {
-                                "type": "section",
-                                "text": {
-                                    "type": "mrkdwn",
-                                    "text": ":white_check_mark: *Your choice has been saved successfully!*\n"
-                                }
+                                "type": "mrkdwn",
+                                "text": "*Meaning:*\n" + meaning
                             }
                         ]
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "*Notes:*\n" + notes
+                        }
+                    },
+                    {
+                        "type": "divider"
+                    },
+                    {
+                        "type": "actions",
+                        "elements": [
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Approve"
+                                },
+                                "style": "primary",
+                                "value": "Approve"
+                            },
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Deny"
+                                },
+                                "style": "danger",
+                                "value": "Deny"
+                            }
+                        ]
+                    } if update == False else
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": ":white_check_mark: *Your choice has been saved successfully!*\n"
+                        }
                     }
-                ],
-                "channel": approver,
-                "ts": ts if update == True else None
+                ]
             }
+        ],
+        "channel": approver,
+        "ts": ts if update == True else None
+    }
+
+
 
 def create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, approvers):
-
     user_name_capitalized = " ".join(user_name)
     date_requested = date.today().strftime("%d/%m/%Y")
     approver_messages = []
@@ -198,8 +200,9 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
     for approver in approvers:
         if approver != user_id:
 
-            #Send approval request
-            modal = get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name_capitalized, date_requested, approver, None, False)
+            # Send approval request
+            modal = get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name_capitalized,
+                                      date_requested, approver, None, False)
 
             headers = {
                 'Content-Type': 'application/json',
@@ -207,7 +210,8 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
             }
             print("headers: " + str(headers))
 
-            response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(modal), headers=headers)
+            response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(modal),
+                                    headers=headers)
             print("response: " + str(response.status) + " " + str(response.data))
 
             data = json.loads(response.data.decode('utf-8'))
@@ -233,6 +237,7 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
         },
         ReturnValues="UPDATED_NEW"
     )
+
 
 def notify_approval_response(acronym, approved, requester_id):
     print("Sending approval response...")
@@ -269,13 +274,18 @@ def notify_pending_approval(user_id, acronym):
     print("Sending pending approval notification...")
     body = {
         "channel": user_id,
-        "blocks": [
+        "attachments": [
             {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"Thanks for contributing! We have received your submission for '{acronym}'. Now it's pending approval."
-                }
+                "color": attachment_color,
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"*Thanks for contributing!*\n We have received your submission for *{acronym}*.\nNow it's pending approval."
+                        }
+                    }
+                ]
             }
         ]
     }
@@ -289,6 +299,40 @@ def notify_pending_approval(user_id, acronym):
     response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
     print("response: " + str(response.status) + " " + str(response.data))
 
+def notify_invalid_acronym(user_id, acronym):
+    print("Sending invalid acronym notification...")
+    body = {
+        "channel": user_id,
+        "attachments": [
+            {
+                "color": attachment_color,
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "*Invalid request:* The acronym " + acronym + " is already defined."
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OAUTH_TOKEN
+    }
+    print("headers: " + str(headers))
+
+    response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
+    print("response: " + str(response.status) + " " + str(response.data))
+
+
+def cleanup_acronym(acronym):
+    return re.sub("[^0-9a-zA-Z]+", "", acronym.upper())
+
+
 def get_data_from_payload(payload):
     acronym = ""
     definition = ""
@@ -297,7 +341,7 @@ def get_data_from_payload(payload):
     team_domain = ""
     user_name = ""
     user_id = ""
-    
+
     actions = payload.get('actions')
 
     if actions is None:
@@ -307,7 +351,7 @@ def get_data_from_payload(payload):
         meaning = payload['view']['state']['values']['meaning_block']['meaning_input']['value']
         notes = payload['view']['state']['values']['notes_block']['notes_input']['value']
         team_domain = payload['team']['domain']
-        user_name = [word.capitalize() for word in payload['user']['name'].split(".") ]
+        user_name = [word.capitalize() for word in payload['user']['name'].split(".")]
         user_id = payload['user']['id']
     else:
         # Obtain the data from approve/deny payload structure
@@ -320,9 +364,12 @@ def get_data_from_payload(payload):
         user_name = user_name_block[user_name_block.index("|") + 1:user_name_block.index(" - New acronym request")]
         user_id = user_name_block[user_name_block.index("/team/") + 6:user_name_block.index("|")]
 
+    # Remove special characters
+    acronym = cleanup_acronym(acronym)
+
     print("acronym: " + acronym)
     print("definition: " + definition)
-    
+
     if meaning is not None:
         print("meaning: " + meaning)
     else:
@@ -333,27 +380,27 @@ def get_data_from_payload(payload):
         print("notes: " + notes)
     else:
         print("no notes")
-        notes = "" 
+        notes = ""
 
     print("team_domain: " + team_domain)
     print("user_name: " + " ".join(user_name))
     print('user id:' + user_id)
-    
+
     return acronym, definition, meaning, notes, team_domain, user_name, user_id
 
 
 def lambda_handler(event, context):
     print("add_meaning: " + str(event))
-    
+
     if check_hash(event) == False:
         print('Signature check failed')
         print('event: ' + str(event))
         return
-    
+
     body = dict(urlparse.parse_qsl(get_body(event)))  # data comes b64 and also urlencoded name=value& pairs
     print("Body: " + str(body))
-    
-    payload = json.loads(body.get('payload',"no-payload"))
+
+    payload = json.loads(body.get('payload', "no-payload"))
     print("Payload: " + str(payload))
 
     actions = payload.get('actions')
@@ -380,23 +427,33 @@ def lambda_handler(event, context):
         value = actions[0]['value']
 
         if value == 'Approve':
-            update_approval_form(acronym,definition,meaning,notes,team_domain,user_id,user_name,date_requested,channel,True,message_ts)
+            update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
+                                 channel, True, message_ts)
             return persistDecision(acronym, approver_id, True)
         if value == 'Deny':
-            update_approval_form(acronym,definition,meaning,notes,team_domain,user_id,user_name,date_requested,channel,False,message_ts)
+            update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
+                                 channel, False, message_ts)
             return persistDecision(acronym, approver_id, False)
 
     # Define acronym (persist in DB) and send approval request to approvers
     return_url = payload['response_urls'][0]['response_url']
-    
+
     user_name_capitalized = " ".join(user_name)
-    status_code = define(acronym,definition,meaning,notes,return_url,user_id,user_name_capitalized,team_domain)
-    create_approval_request(acronym,definition,meaning,notes,team_domain,user_id,user_name, APPROVERS)
-    notify_pending_approval(user_id,acronym)
+    status_code = '200'
+    results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+
     
+    if len( results['Items'] ) == 0:
+        status_code = define(acronym, definition, meaning, notes, return_url, user_id,user_name_capitalized,team_domain)
+        create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, APPROVERS)
+        notify_pending_approval(user_id,acronym)
+    else:
+        notify_invalid_acronym(user_id,acronym)
+
     return {
-        "statusCode" : status_code
+        "statusCode": status_code
     }
+
 
 def update_form_closed(item):
     try:
@@ -406,13 +463,13 @@ def update_form_closed(item):
             modal = {
                 "attachments": [
                     {
-                        "color": "#000000",
+                        "color": attachment_color,
                         "blocks": [
                             {
                                 "type": "section",
                                 "text": {
                                     "type": "mrkdwn",
-                                    "text": "*The request for: " + acronym + " is completed. Thanks for contributing, the voting is closed!*\n"
+                                    "text": f"*The request for {acronym} is completed.*\n Thanks for contributing, the voting is closed!"
                                 }
                             }
                         ]
@@ -428,18 +485,21 @@ def update_form_closed(item):
             }
             print("headers: " + str(headers))
 
-            response = http.request('POST', 'https://slack.com/api/chat.update', body=json.dumps(modal), headers=headers)
+            response = http.request('POST', 'https://slack.com/api/chat.update', body=json.dumps(modal),
+                                    headers=headers)
             print("response: " + str(response.status) + " " + str(response.data))
     except:
-        print( "Error in update_form_closed" )
+        print("Error in update_form_closed")
 
-def update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, channel, decision, message_ts):
 
+def update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, channel,
+                         decision, message_ts):
     if meaning is "":
         meaning = "-"
 
-    #Update approval message form
-    modal = get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, channel, message_ts, True)
+    # Update approval message form
+    modal = get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
+                              channel, message_ts, True)
 
     headers = {
         'Content-Type': 'application/json',
@@ -449,7 +509,7 @@ def update_approval_form(acronym, definition, meaning, notes, team_domain, user_
 
     response = http.request('POST', 'https://slack.com/api/chat.update', body=json.dumps(modal), headers=headers)
     print("response: " + str(response.status) + " " + str(response.data))
-    
+
 
 def persistDecision(acronym, userId, decision):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
@@ -481,7 +541,7 @@ def persistDecision(acronym, userId, decision):
             },
             ReturnValues="UPDATED_NEW"
         )
-        response = update_reviewers(acronym,reviewers,decisionStr)
+        response = update_reviewers(acronym, reviewers, decisionStr)
         update_form_closed(item)
     else:
         if not decision and len(reviewers) >= REVIEWERS_MAX:
@@ -492,17 +552,17 @@ def persistDecision(acronym, userId, decision):
             )
             update_form_closed(item)
         else:
-            response = update_reviewers(acronym,reviewers,decisionStr)
+            response = update_reviewers(acronym, reviewers, decisionStr)
 
     if len(reviewers) >= REVIEWERS_MAX:
-        notify_approval_response(acronym,decision,requester_id)
+        notify_approval_response(acronym, decision, requester_id)
 
     return {
-        "statusCode" : response['ResponseMetadata']['HTTPStatusCode']
+        "statusCode": response['ResponseMetadata']['HTTPStatusCode']
     }
 
 
-def update_reviewers(acronym,reviewers,decisionStr):
+def update_reviewers(acronym, reviewers, decisionStr):
     response = table.update_item(
         Key={
             'Acronym': acronym
