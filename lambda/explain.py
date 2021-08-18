@@ -272,6 +272,7 @@ def lambda_handler(event, context):
     print(str(command) + ' ' + str(text) + ' -> ' + str(response) + ',original: ' + str(msg_map))
 
     return {
+        "as_user": True,
         "response_type": "in_channel",
         "attachments": [
             {
