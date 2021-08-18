@@ -272,7 +272,9 @@ def lambda_handler(event, context):
     print(str(command) + ' ' + str(text) + ' -> ' + str(response) + ',original: ' + str(msg_map))
 
     return {
-        "as_user": True,
+        "username": "Define Bot",
+        "icon_url": "https://avatars.slack-edge.com/2021-08-18/2400545070612_2ec7dffdd0ccda716447_192.png",
+        "as_user": False,
         "response_type": "in_channel",
         "attachments": [
             {
