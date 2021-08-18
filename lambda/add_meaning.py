@@ -365,7 +365,7 @@ def get_data_from_payload(payload):
         # Obtain the data from approve/deny payload structure
         acronym = payload['message']['attachments'][0]['blocks'][1]['fields'][0]['text'][12:]
         definition = payload['message']['attachments'][0]['blocks'][1]['fields'][2]['text'][14:]
-        meaning = payload['message']['attachments'][0]['blocks'][1]['fields'][3]['text'][13:]
+        meaning = payload['message']['attachments'][0]['blocks'][1]['fields'][3]['text'][15:]
         notes = payload['message']['attachments'][0]['blocks'][2]['text']['text'][9:]
         team_domain = payload['team']['domain']
         user_name_block = payload['message']['attachments'][0]['blocks'][0]['text']['text']
