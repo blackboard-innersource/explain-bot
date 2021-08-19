@@ -156,6 +156,7 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                         "block_id": "meaning_block",
                         "optional": True,
                         "element": {
+                            "max_length": 500
                             "type": "plain_text_input",
                             "action_id": "meaning_input",
                             "multiline": True,
@@ -174,6 +175,7 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                         "block_id": "notes_block",
                         "optional": True,
                         "element": {
+                            "max_length": 500
                             "type": "plain_text_input",
                             "action_id": "notes_input",
                             "multiline": True,
