@@ -129,7 +129,9 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                             "type": "plain_text_input",
                             "action_id": "acronym_input",
                             "multiline": False,
-                            "initial_value": acronym
+                            "initial_value": acronym,
+                            "min_length": 1,
+                            "max_length": 500
                         },
                         "label": {
                             "type": "plain_text",
@@ -144,7 +146,8 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                             "action_id": "definition_input",
                             "multiline": False,
                             "initial_value": definition,
-                            "min_length": 1
+                            "min_length": 1,
+                            "max_length": 500
                         },
                         "label": {
                             "type": "plain_text",
