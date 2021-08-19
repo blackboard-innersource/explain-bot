@@ -82,7 +82,7 @@ def explain(acronym):
             return definition
         elif approval == APPROVAL_STATUS_PENDING:
             return returnSingleBlocks(f'Acronym *{acronym}* is waiting for approval.')
-    return returnSingleBlocks(f'Acronym *{acronym}* is not defined. Do you want to add it? Type `/define (acronym) +<definition>`')
+    return returnSingleBlocks(f'Acronym *{acronym}* is not defined. Do you want to add it?\nType `/define <acronym> <definition>` to add a new acronym.')
 
 
 def create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id):
@@ -272,9 +272,6 @@ def lambda_handler(event, context):
     print(str(command) + ' ' + str(text) + ' -> ' + str(response) + ',original: ' + str(msg_map))
 
     return {
-        "username": "Define Bot",
-        "icon_url": "https://avatars.slack-edge.com/2021-08-18/2400545070612_2ec7dffdd0ccda716447_192.png",
-        "as_user": False,
         "response_type": "in_channel",
         "attachments": [
             {
