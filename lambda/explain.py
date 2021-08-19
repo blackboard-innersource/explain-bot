@@ -68,7 +68,7 @@ def explain(acronym):
                         },
                         {
                             "type": "mrkdwn",
-                            "text": "*Description:*\n" + meaning
+                            "text": "*Details:*\n" + meaning
                         },
                         {
                             "type": "mrkdwn",
@@ -170,7 +170,7 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                         },
                         "label": {
                             "type": "plain_text",
-                            "text": "Acronym description:"
+                            "text": "Acronym details:"
                         }
                     },
                     {

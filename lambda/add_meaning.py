@@ -56,7 +56,7 @@ def explain(acronym):
     try:
         item = results['Items'][0]
 
-        retval = item['Acronym'] + " - " + item['Definition'] + "\n---\n*Description*: " + item['Meaning'] + "\n*Notes*: " + \
+        retval = item['Acronym'] + " - " + item['Definition'] + "\n---\n*Details*: " + item['Meaning'] + "\n*Notes*: " + \
                  item['Notes']
 
     except:
@@ -136,7 +136,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                             },
                             {
                                 "type": "mrkdwn",
-                                "text": "*Description:*\n" + meaning
+                                "text": "*Details:*\n" + meaning
                             }
                         ]
                     },
@@ -365,7 +365,7 @@ def get_data_from_payload(payload):
         # Obtain the data from approve/deny payload structure
         acronym = payload['message']['attachments'][0]['blocks'][1]['fields'][0]['text'][12:]
         definition = payload['message']['attachments'][0]['blocks'][1]['fields'][2]['text'][14:]
-        meaning = payload['message']['attachments'][0]['blocks'][1]['fields'][3]['text'][15:]
+        meaning = payload['message']['attachments'][0]['blocks'][1]['fields'][3]['text'][11:]
         notes = payload['message']['attachments'][0]['blocks'][2]['text']['text'][9:]
         team_domain = payload['team']['domain']
         user_name_block = payload['message']['attachments'][0]['blocks'][0]['text']['text']
