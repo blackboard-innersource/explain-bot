@@ -230,7 +230,7 @@ def cleanup_acronym(acronym):
 
 
 def help_response():
-    text = ("Hi there, I'm Define Bot :wave: Here are some quick tips to get you started! \n"
+    text = ("Hey there, I'm Define Bot :wave: Here are some quick tips to get you started! \n"
             "`/define <acronym>` to see the acronym information \n"
             "`/define <acronym> <definition>` to add a new acronym")
     return returnSingleBlocks(text)
