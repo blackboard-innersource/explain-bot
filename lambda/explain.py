@@ -255,14 +255,18 @@ def lambda_handler(event, context):
 
     if (len(text) >= 2):
         acronym = cleanup_acronym(text[0])
-        definition = ""
-        i = 1
-        for i in range(1, len(text)):
-            definition += text[i]
-            if i != len(text):
-                definition += ' '
 
-        response = create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id)
+        if acronym is "" or acronym is None:
+            response = help_response()
+        else:
+            definition = ""
+            i = 1
+            for i in range(1, len(text)):
+                definition += text[i]
+                if i != len(text):
+                    definition += ' '
+
+            response = create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id)
 
     elif (len(text) == 1):
         acronym = cleanup_acronym(text[0])
