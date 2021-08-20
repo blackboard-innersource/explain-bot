@@ -290,7 +290,7 @@ def notify_pending_approval(user_id, acronym):
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": f"*Submission successful!*\n We received your submission for *{acronym}*.\nPlease check @define_bot for updates."
+                            "text": f"*Submission successful!*\n We received your submission for *{acronym}*.\nAs soon as we approve it you should see it available."
                         }
                     }
                 ]
