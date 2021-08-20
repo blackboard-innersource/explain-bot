@@ -248,7 +248,7 @@ def notify_approval_response(acronym, approved, requester_id):
     if approved == True:
         message = f"Your submission for *{acronym}* was approved. Thanks for contributing!"
     else:
-        message = f"Sorry, your submission for *{acronym}* was denied."
+        message = f"Sorry, your submission for *{acronym}* has not been approved at this time."
 
     body = {
         "channel": requester_id,
@@ -290,7 +290,7 @@ def notify_pending_approval(user_id, acronym):
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": f"*Submission successful!*\n We received your submission for *{acronym}*.\nAs soon as we approve it you should see it available."
+                            "text": f"*Submission successful!*\n Your submission for *{acronym}* has been received and is being reviewed."
                         }
                     }
                 ]
