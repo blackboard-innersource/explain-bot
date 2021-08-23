@@ -194,10 +194,10 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
     date_requested = date.today().strftime("%d/%m/%Y")
     approver_messages = []
 
-    if meaning is "":
+    if meaning == "":
         meaning = "-"
 
-    if notes is "":
+    if notes == "":
         notes = "-"
 
     for approver in approvers:
@@ -502,10 +502,10 @@ def update_form_closed(item):
 
 def update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested, channel,
                          decision, message_ts):
-    if meaning is "":
+    if meaning == "":
         meaning = "-"
 
-    if notes is "":
+    if notes == "":
         notes = "-"
 
     # Update approval message form
