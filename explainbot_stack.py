@@ -36,6 +36,7 @@ class ExplainBotLambdaStack(cdk.Stack):
             code=_lambda.Code.asset('lambda'),
             handler='explain.lambda_handler',
             role = lambda_role,
+            timeout=cdk.Duration.minutes(5),
             environment = {
                 'STAGE': stage
             }
@@ -47,6 +48,7 @@ class ExplainBotLambdaStack(cdk.Stack):
             code=_lambda.Code.asset('lambda'),
             handler='add_meaning.lambda_handler',
             role= lambda_role,
+            timeout=cdk.Duration.minutes(5),
             environment = {
                 'STAGE': stage
             }
