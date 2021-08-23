@@ -256,7 +256,7 @@ def lambda_handler(event, context):
     if (len(text) >= 2):
         acronym = cleanup_acronym(text[0])
 
-        if acronym is "" or acronym is None:
+        if acronym == "" or acronym is None or len(acronym) == 0 or acronym == "HELP":
             response = help_response()
         else:
             definition = ""
