@@ -68,7 +68,7 @@ def explain(acronym):
                         },
                         {
                             "type": "mrkdwn",
-                            "text": "*Description:*\n" + meaning
+                            "text": "*Details:*\n" + meaning
                         },
                         {
                             "type": "mrkdwn",
@@ -82,7 +82,7 @@ def explain(acronym):
             return definition
         elif approval == APPROVAL_STATUS_PENDING:
             return returnSingleBlocks(f'Acronym *{acronym}* is waiting for approval.')
-    return returnSingleBlocks(f'Acronym *{acronym}* is not defined. Do you want to add it? Type `/define (acronym) +<definition>`')
+    return returnSingleBlocks(f'Acronym *{acronym}* is not defined. Do you want to add it?\nType `/define <acronym> <definition>` to add a new acronym.')
 
 
 def create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id):
@@ -129,7 +129,9 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                             "type": "plain_text_input",
                             "action_id": "acronym_input",
                             "multiline": False,
-                            "initial_value": acronym
+                            "initial_value": acronym,
+                            "min_length": 1,
+                            "max_length": 500
                         },
                         "label": {
                             "type": "plain_text",
@@ -144,7 +146,8 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                             "action_id": "definition_input",
                             "multiline": False,
                             "initial_value": definition,
-                            "min_length": 1
+                            "min_length": 1,
+                            "max_length": 500
                         },
                         "label": {
                             "type": "plain_text",
@@ -156,6 +159,7 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                         "block_id": "meaning_block",
                         "optional": True,
                         "element": {
+                            "max_length": 500,
                             "type": "plain_text_input",
                             "action_id": "meaning_input",
                             "multiline": True,
@@ -166,7 +170,7 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                         },
                         "label": {
                             "type": "plain_text",
-                            "text": "Acronym description:"
+                            "text": "Acronym details:"
                         }
                     },
                     {
@@ -174,6 +178,7 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
                         "block_id": "notes_block",
                         "optional": True,
                         "element": {
+                            "max_length": 500,
                             "type": "plain_text_input",
                             "action_id": "notes_input",
                             "multiline": True,
@@ -225,7 +230,7 @@ def cleanup_acronym(acronym):
 
 
 def help_response():
-    text = ("Hi there, I'm Define Bot :wave: Here are some quick tips to get you started! \n"
+    text = ("Hey there, I'm Define Bot :wave: Here are some quick tips to get you started! \n"
             "`/define <acronym>` to see the acronym information \n"
             "`/define <acronym> <definition>` to add a new acronym")
     return returnSingleBlocks(text)
@@ -250,14 +255,18 @@ def lambda_handler(event, context):
 
     if (len(text) >= 2):
         acronym = cleanup_acronym(text[0])
-        definition = ""
-        i = 1
-        for i in range(1, len(text)):
-            definition += text[i]
-            if i != len(text):
-                definition += ' '
 
-        response = create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id)
+        if acronym is "" or acronym is None:
+            response = help_response()
+        else:
+            definition = ""
+            i = 1
+            for i in range(1, len(text)):
+                definition += text[i]
+                if i != len(text):
+                    definition += ' '
+
+            response = create_modal(acronym, definition, user_name, channel_name, team_domain, trigger_id)
 
     elif (len(text) == 1):
         acronym = cleanup_acronym(text[0])

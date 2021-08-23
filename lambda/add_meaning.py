@@ -56,7 +56,7 @@ def explain(acronym):
     try:
         item = results['Items'][0]
 
-        retval = item['Acronym'] + " - " + item['Definition'] + "\n---\n*Description*: " + item['Meaning'] + "\n*Notes*: " + \
+        retval = item['Acronym'] + " - " + item['Definition'] + "\n---\n*Details*: " + item['Meaning'] + "\n*Notes*: " + \
                  item['Notes']
 
     except:
@@ -136,7 +136,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                             },
                             {
                                 "type": "mrkdwn",
-                                "text": "*Description:*\n" + meaning
+                                "text": "*Details:*\n" + meaning
                             }
                         ]
                     },
@@ -248,7 +248,7 @@ def notify_approval_response(acronym, approved, requester_id):
     if approved == True:
         message = f"Your submission for *{acronym}* was approved. Thanks for contributing!"
     else:
-        message = f"Sorry, your submission for *{acronym}* was denied."
+        message = f"Sorry, your submission for *{acronym}* has not been approved at this time."
 
     body = {
         "channel": requester_id,
@@ -290,7 +290,7 @@ def notify_pending_approval(user_id, acronym):
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": f"*Thanks for contributing!*\n We have received your submission for *{acronym}*.\nNow it's pending approval."
+                            "text": f"*Submission successful!*\n Your submission for *{acronym}* has been received and is being reviewed."
                         }
                     }
                 ]
@@ -365,7 +365,7 @@ def get_data_from_payload(payload):
         # Obtain the data from approve/deny payload structure
         acronym = payload['message']['attachments'][0]['blocks'][1]['fields'][0]['text'][12:]
         definition = payload['message']['attachments'][0]['blocks'][1]['fields'][2]['text'][14:]
-        meaning = payload['message']['attachments'][0]['blocks'][1]['fields'][3]['text'][15:]
+        meaning = payload['message']['attachments'][0]['blocks'][1]['fields'][3]['text'][11:]
         notes = payload['message']['attachments'][0]['blocks'][2]['text']['text'][9:]
         team_domain = payload['team']['domain']
         user_name_block = payload['message']['attachments'][0]['blocks'][0]['text']['text']
