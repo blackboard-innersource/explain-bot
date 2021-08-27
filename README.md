@@ -11,7 +11,7 @@ On the subsequent page, simply click the _Create New App_ button. Give your app 
 
 On the page that loads when you create your application, you will see a form with _App Credentials_. Click _Show_ for your Signing Secret and copy that value to the clipboard.
 
-In this project, we need to manually store secrets as plain text in SecretsManager or parameters in the Parameter Store in the aws account. Please create /explainbot/parameters/<dev-prod>/slack_signing_secret in the Parameter store as a secure string and it will be available for access in the code.
+In this project, we need to manually store secrets as plain text in _SecretsManager_ and parameters in the _Parameter Store_ in the region `us-east-2` of the aws account (if a different region is used update the variable _ssm_ in all lambda files accordingly). Please create `/explainbot/parameters/<dev-prod>/slack_signing_secret` in the Parameter store as a secure string and it will be available for access in the code.
 
 Next, click _Slash Commands_ in the left-hand navigation and click _Create New Command_. Enter a name for your command **WITH** the slash. I called it `/define` but the app doesn't care what you call it. In the URL field, put a dummy URL. We will fill this in after we deploy the app. Give it a short description, which is required, and then a usage hint if you like, the click _Save_.
 
@@ -19,13 +19,13 @@ Now, from the left-hand menu, click _Interactivity & Shortcuts_. Click the toggl
 
 To continue further, we will need to install the application to the Slack workspace. In the left-hand navigation click _Install App_ and the click _Request to Install_. This will send a request to DIRE. You should also open a DIRE ticket to ensure they are aware of the request. 
 
-Once the app is installed in the Blackboard-Sandbox workspace, the app will provide you the last piece of information we require for deployment. Back in the place where you registered and configured you application, there is a left-hand navigation item for _OAuth & Permissions_. Click this link and copy the _Bot User OAuth Token_. Create a OAUTH_TOKEN parameter as a secure string in Parameter Store with the latter token following the hierarchy /explainbot/parameters/<dev-prod>/oauth_token.
+Once the app is installed in the Blackboard-Sandbox workspace, the app will provide you the last piece of information we require for deployment. Back in the place where you registered and configured you application, there is a left-hand navigation item for _OAuth & Permissions_. Click this link and copy the _Bot User OAuth Token_. Create a OAUTH_TOKEN parameter as a secure string in Parameter Store with the latter token following the hierarchy `/explainbot/parameters/<dev-prod>/oauth_token`.
 
-For the deployment we used CodePipeline to automate the release process. In order to connect GitHub with the pipeline go to GitHub -> Settings -> Developer Settings -> Personal Access Tokens and create a token (remember to authorize to your organization). Create a GITHUB_TOKEN_NAME secret in Secrets Manager with the newly generated access token. Next, you'll need to create a secret named EXPLAINBOT_ACCOUNT corresponding to the aws account number used to create these project resources
+For the deployment we used CodePipeline to automate the release process. In order to connect GitHub with the pipeline go to GitHub -> Settings -> Developer Settings -> Personal Access Tokens and create a token (remember to authorize to your organization). Create a `GITHUB_TOKEN_NAME` secret in Secrets Manager with the newly generated access token. Next, you'll need to create a secret named `EXPLAINBOT_ACCOUNT` corresponding to the aws account number used to create these project resources
 
-Finally, include another parameter in the Parameter Store /explainbot/parameters/<dev-prod>/approvers as a string and add the APPROVERS with the comma-delimited string that you wish to be able to approve definitions.
+Finally, include another parameter in the Parameter Store `/explainbot/parameters/<dev-prod>/approvers` as a string and add the APPROVERS with the comma-delimited string that you wish to be able to approve definitions.
 
-In order to fill the database with predetermined information, upload a filed named acronyms.csv to a bucket named explainbot-initial-data in your account. Give the permission s3:GetObject for * in the policy.
+In order to fill the database with predetermined information, upload the filed named `acronyms.csv` from this repo to a bucket named `explainbot-initial-data-<dev-prod>` in your account (if a different name is required update the lambda file _initial_data.py_ accordingly). In bucket _Permissions_ tab, uncheck **Block all public access**, and add a bucket policy to allow the action _s3:GetObject_ for `Principal:*`.
 
 Next, activate the virtual environment. If you are on Windows, execute `./source.bat` from the commandline in the project directory. If you are on Mac, execute `. .env/bin/activate` in the terminal inside the project directory. 
 
