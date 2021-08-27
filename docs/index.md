@@ -12,7 +12,7 @@ On the page that loads when you create your application, you will see a form wit
 
 In this project, copy ConfigTempalte.py to Config.py, and paste your signing secret as the value for "SLACK_SIGNING_SECRET". The application will use this value to validate incoming requests from Slack.
 
-Next, click _Slash Commands_ in the left-hand navigation and click _Create New Command_. Enter a name for your command **WITH** the slash. I called it `/explain` but the app doesn't care what you call it. In the URL field, put a dummy URL. We will fill this in after we deploy the app. Give it a short description, which is required, and then a usage hint if you like, the click _Save_.
+Next, click _Slash Commands_ in the left-hand navigation and click _Create New Command_. Enter a name for your command **WITH** the slash. I called it `/define` but the app doesn't care what you call it. In the URL field, put a dummy URL. We will fill this in after we deploy the app. Give it a short description, which is required, and then a usage hint if you like, the click _Save_.
 
 Now, from the left-hand menu, click _Interactivity & Shortcuts_. Click the toggle to turn on Interactivity and add a dummy URL to _Request URL_ and click _Save Changes_. We will fill this in once the application is deployed to AWS.
 
@@ -50,7 +50,7 @@ Now that the application is running in AWS, the last step is to add the real URL
 
 Now click _Slash Commands_ in the left-hand navigation and then click the pencil icon next to the slash command you created. Paste the Invoke URL into the _Request URL_ text box. It should look like `https://<api id>.execute-api.us-east-1.amazonaws.com/`. Click _Save_.
 
-Now simply login to Blackboard-Sandbox.slack.com with your AFDS credentials, and type `/explain lace` and press ENTER. Of course if you called it something other than `/explain`, use your command. It should return the definition. Now, assuming you added yourself as an "UPDATER", type `explain CDK Cloud Development Kit` and press ENTER. This will load a modal that you can accept as is or edit and then click _Submit_. You have now defined a new acronym available to all. 
+Now simply login to Blackboard-Sandbox.slack.com with your AFDS credentials, and type `/define lace` and press ENTER. Of course if you called it something other than `/define`, use your command. It should return the definition. Now, assuming you added yourself as an "UPDATER", type `/define CDK Cloud Development Kit` and press ENTER. This will load a modal that you can accept as is or edit and then click _Submit_. You have now defined a new acronym available to all. 
 
 ## How to contribute
 

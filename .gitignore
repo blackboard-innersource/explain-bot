@@ -3,10 +3,14 @@ package-lock.json
 __pycache__
 .pytest_cache
 .env
+/env
 .venv
 *.egg-info
+.python-version
+.vscode
 
 # CDK asset staging directory
 .cdk.staging
 cdk.out
 Config.py
+/.idea/
