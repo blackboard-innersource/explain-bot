@@ -242,20 +242,13 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
     )
 
 
-def notify_approval_response(acronym, approved, requester_id):
+def notify_approval_response(acronym, approved, requester_id, team_domain):
     print("Sending approval response...")
+    blocks = []
 
     if approved == True:
         message = f"Your submission for *{acronym}* was approved. Thanks for contributing!"
-    else:
-        message = f"Sorry, your submission for *{acronym}* has not been approved at this time."
-
-    body = {
-        "channel": requester_id,
-        "attachments": [
-            {
-                "color": attachment_color,
-                "blocks": [
+        blocks = [
                     {
                         "type": "section",
                         "text": {
@@ -264,6 +257,50 @@ def notify_approval_response(acronym, approved, requester_id):
                         }
                     }
                 ]
+    else:
+        result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+
+        if len(result['Items']) == 0:
+            return { "statusCode": 404 }
+
+        item = result['Items'][0]
+        approver_messages = item.get("ApproverFeedbackMessages", [])
+        feedback_msgs = ""
+        for feedback in approver_messages:
+            print( "ApproverFeedbackMessages: ", feedback['message'] )
+            feedback_msgs += " - *<https://" + team_domain + ".slack.com/team/" + feedback['approverId'] + "|" + feedback['approverUsername'] + ":>* " + feedback['message'] + "\n"
+
+        message = f"Sorry, your submission for *{acronym}* has not been approved at this time."
+        blocks = [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": message
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "*Feedback from approvers:*"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": feedback_msgs
+                        }
+                    }
+                ]
+
+    body = {
+        "channel": requester_id,
+        "attachments": [
+            {
+                "color": attachment_color,
+                "blocks": blocks
             }
         ]
     }
@@ -277,6 +314,25 @@ def notify_approval_response(acronym, approved, requester_id):
     response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
     print("response: " + str(response.status) + " " + str(response.data))
 
+    data = json.loads(response.data.decode('utf-8'))
+    notification_data = {}
+
+    if data.get('ok'):
+        notification_data = {
+            'channel': data.get('channel'),
+            'ts': data.get('ts')
+        }
+
+        table.update_item(
+            Key={
+                'Acronym': acronym
+            },
+            UpdateExpression=f"set NotificationMessage=:a",
+            ExpressionAttributeValues={
+                ':a': notification_data,
+            },
+            ReturnValues="UPDATED_NEW"
+        )
 
 def notify_pending_approval(user_id, acronym):
     print("Sending pending approval notification...")
@@ -487,7 +543,7 @@ def lambda_handler(event, context):
             status_code = '200'
         else:
             acronym, definition, meaning, notes, team_domain, user_name, user_id = get_data_from_payload(payload)
-            
+
             # Define acronym (persist in DB) and send approval request to approvers
             return_url = payload['response_urls'][0]['response_url']
 
