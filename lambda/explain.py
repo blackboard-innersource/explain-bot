@@ -75,6 +75,24 @@ def explain(acronym):
                             "text": "*Notes:*\n" + notes
                         }
                     ]
+                },
+                {
+                    "type": "divider"
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Post in channel"
+                            },
+                            "style": "primary",
+                            "value": item['Acronym'],
+                            "action_id": "Post"
+                        }
+                    ]
                 }
             ]
 
