@@ -439,12 +439,12 @@ def lambda_handler(event, context):
 
     # Check which action was sent
     if actions is not None:
-        # Obtain the channel id i.e approver id
+        # Obtain the channel id
         channel = payload['channel']['id']
         
         action_id = actions[0]['action_id']
         
-        if action_id == 'Post':
+        if action_id == 'post_in_channel':
             response_url = payload['response_url']
             acronym = str(actions[0]['value'])
             delete_message(response_url)
@@ -452,7 +452,7 @@ def lambda_handler(event, context):
             
          # Obtain required data
         acronym, definition, meaning, notes, team_domain, user_name, user_id = get_data_from_payload(payload)
-        
+
         value = actions[0]['value']
 
         # Obtain the date when acronym was requested

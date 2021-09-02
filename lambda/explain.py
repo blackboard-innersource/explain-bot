@@ -90,7 +90,7 @@ def explain(acronym):
                             },
                             "style": "primary",
                             "value": item['Acronym'],
-                            "action_id": "Post"
+                            "action_id": "post_in_channel"
                         }
                     ]
                 }
