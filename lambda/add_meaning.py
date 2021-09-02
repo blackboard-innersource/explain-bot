@@ -226,20 +226,13 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
     )
 
 
-def notify_approval_response(acronym, approved, requester_id):
+def notify_approval_response(acronym, approved, requester_id, team_domain):
     print("Sending approval response...")
+    blocks = []
 
     if approved == True:
         message = f"Your submission for *{acronym}* was approved. Thanks for contributing!"
-    else:
-        message = f"Sorry, your submission for *{acronym}* has not been approved at this time."
-
-    body = {
-        "channel": requester_id,
-        "attachments": [
-            {
-                "color": attachment_color,
-                "blocks": [
+        blocks = [
                     {
                         "type": "section",
                         "text": {
@@ -248,6 +241,50 @@ def notify_approval_response(acronym, approved, requester_id):
                         }
                     }
                 ]
+    else:
+        result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+
+        if len(result['Items']) == 0:
+            return { "statusCode": 404 }
+
+        item = result['Items'][0]
+        approver_messages = item.get("ApproverFeedbackMessages", [])
+        feedback_msgs = ""
+        for feedback in approver_messages:
+            print( "ApproverFeedbackMessages: ", feedback['message'] )
+            feedback_msgs += " - *<https://" + team_domain + ".slack.com/team/" + feedback['approverId'] + "|" + feedback['approverUsername'] + ":>* " + feedback['message'] + "\n"
+
+        message = f"Sorry, your submission for *{acronym}* has not been approved at this time."
+        blocks = [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": message
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "*Feedback from approvers:*"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": feedback_msgs
+                        }
+                    }
+                ]
+
+    body = {
+        "channel": requester_id,
+        "attachments": [
+            {
+                "color": attachment_color,
+                "blocks": blocks
             }
         ]
     }
@@ -261,6 +298,25 @@ def notify_approval_response(acronym, approved, requester_id):
     response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
     print("response: " + str(response.status) + " " + str(response.data))
 
+    data = json.loads(response.data.decode('utf-8'))
+    notification_data = {}
+
+    if data.get('ok'):
+        notification_data = {
+            'channel': data.get('channel'),
+            'ts': data.get('ts')
+        }
+
+        table.update_item(
+            Key={
+                'Acronym': acronym
+            },
+            UpdateExpression=f"set NotificationMessage=:a",
+            ExpressionAttributeValues={
+                ':a': notification_data,
+            },
+            ReturnValues="UPDATED_NEW"
+        )
 
 def notify_pending_approval(user_id, acronym):
     print("Sending pending approval notification...")
@@ -437,8 +493,11 @@ def lambda_handler(event, context):
     actions = payload.get('actions')
     print("Actions: " + str(actions))
 
+    event_type = payload.get('type')
+    print( "Event type: " + str(event_type) )
+
     # Check which action was sent
-    if actions is not None:
+    if event_type == "block_actions" and actions is not None:
         # Obtain the channel id
         channel = payload['channel']['id']
         
@@ -468,26 +527,68 @@ def lambda_handler(event, context):
         if value == 'Approve':
             update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
                                  channel, True, message_ts)
-            return persistDecision(acronym, approver_id, True)
+            return persistDecision(acronym, approver_id, True, team_domain)
         if value == 'Deny':
+            trigger_id = payload['trigger_id']
+            create_feedback_modal(trigger_id, acronym)
             update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
                                  channel, False, message_ts)
-            return persistDecision(acronym, approver_id, False)
+            return persistDecision(acronym, approver_id, False, team_domain)
 
-    # Define acronym (persist in DB) and send approval request to approvers
-    return_url = payload['response_urls'][0]['response_url']
-
-    user_name_capitalized = " ".join(user_name)
     status_code = '200'
-    results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+    if event_type == "view_submission":
+        callback_id = payload['view']['callback_id']
+        if callback_id == "feedback_sent":
+            feedback = payload['view']['state']['values']['feedback_block']['plain_text_feedback-action']['value']
+            print( "Feedback: ", feedback )
 
-    
-    if len( results['Items'] ) == 0:
-        status_code = define(acronym, definition, meaning, notes, return_url, user_id,user_name_capitalized,team_domain)
-        create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, APPROVERS)
-        notify_pending_approval(user_id,acronym)
-    else:
-        notify_invalid_acronym(user_id,acronym)
+            acronym = payload['view']['blocks'][0]['element']['initial_value']
+            print( "Acronym: ", acronym )
+
+            result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+
+            if len(result['Items']) == 0:
+                return { "statusCode": 404 }
+
+            item = result['Items'][0]
+            approver_messages = item.get("ApproverFeedbackMessages", [])
+
+            message_data = {
+                'approverId': payload['user']['id'],
+                'approverUsername': payload['user']['username'],
+                'message': payload['view']['state']['values']['feedback_block']['plain_text_feedback-action']['value'],
+            }
+            approver_messages.append(message_data)
+            
+            table.update_item(
+                Key={
+                    'Acronym': acronym
+                },
+                UpdateExpression=f"set ApproverFeedbackMessages=:a",
+                ExpressionAttributeValues={
+                    ':a': approver_messages,
+                },
+                ReturnValues="UPDATED_NEW"
+            )
+
+            status_code = '200'
+        else:
+            acronym, definition, meaning, notes, team_domain, user_name, user_id = get_data_from_payload(payload)
+
+            # Define acronym (persist in DB) and send approval request to approvers
+            return_url = payload['response_urls'][0]['response_url']
+
+            user_name_capitalized = " ".join(user_name)
+            status_code = '200'
+            results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+
+            
+            if len( results['Items'] ) == 0:
+                status_code = define(acronym, definition, meaning, notes, return_url, user_id,user_name_capitalized,team_domain)
+                create_approval_request(acronym, definition, meaning, notes, team_domain, user_id, user_name, APPROVERS)
+                notify_pending_approval(user_id,acronym)
+            else:
+                notify_invalid_acronym(user_id,acronym)
 
     return {
         "statusCode": status_code
@@ -552,8 +653,74 @@ def update_approval_form(acronym, definition, meaning, notes, team_domain, user_
     response = http.request('POST', 'https://slack.com/api/chat.update', body=json.dumps(modal), headers=headers)
     print("response: " + str(response.status) + " " + str(response.data))
 
+def create_feedback_modal(trigger_id, acronym):
 
-def persistDecision(acronym, userId, decision):
+    modal = {
+        "trigger_id": trigger_id,
+        "view": {
+            "type": "modal",
+            "callback_id": 'feedback_sent',
+            "title": {
+                "type": "plain_text",
+                "text": "Define Bot",
+                "emoji": True
+            },
+            "submit": {
+                "type": "plain_text",
+                "text": "Submit",
+                "emoji": True
+            },
+            "blocks": [
+                {
+                    "type": "input",
+                    "block_id": "acronym_block",
+                    "element": {
+                        "type": "plain_text_input",
+                        "action_id": "acronym_input",
+                        "multiline": False,
+                        "initial_value": acronym,
+                        "min_length": 1,
+                        "max_length": 500
+                    },
+                    "label": {
+                        "type": "plain_text",
+                        "text": "Acronym"
+                    }
+                },
+                {
+                    "type": "input",
+                    "block_id": "feedback_block",
+                    "element": {
+                        "type": "plain_text_input",
+                        "multiline": True,
+                        "action_id": "plain_text_feedback-action",
+                        "min_length": 1,
+                        "max_length": 500
+                    },
+                    "label": {
+                        "type": "plain_text",
+                        "text": "Provide some feedback to the user:",
+                        "emoji": True
+                    }
+                }
+            ]
+        }
+    }
+
+    print("Feedback modal: " + str(modal))
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OAUTH_TOKEN
+    }
+
+    print("headers: " + str(headers))
+
+    response = http.request('POST', 'https://slack.com/api/views.open', body=json.dumps(modal), headers=headers)
+
+    print("response: " + str(response.status) + " " + str(response.data))
+
+def persistDecision(acronym, userId, decision, team_domain):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
 
     if len(result['Items']) == 0:
@@ -597,7 +764,7 @@ def persistDecision(acronym, userId, decision):
             response = update_reviewers(acronym, reviewers, decisionStr)
 
     if len(reviewers) >= REVIEWERS_MAX:
-        notify_approval_response(acronym, decision, requester_id)
+        notify_approval_response(acronym, decision, requester_id, team_domain)
 
     return {
         "statusCode": response['ResponseMetadata']['HTTPStatusCode']
