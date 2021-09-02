@@ -496,13 +496,13 @@ def lambda_handler(event, context):
         if value == 'Approve':
             update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
                                  channel, True, message_ts)
-            return persistDecision(acronym, approver_id, True)
+            return persistDecision(acronym, approver_id, True, team_domain)
         if value == 'Deny':
             trigger_id = payload['trigger_id']
             create_feedback_modal(trigger_id, acronym)
             update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
                                  channel, False, message_ts)
-            return persistDecision(acronym, approver_id, False)
+            return persistDecision(acronym, approver_id, False, team_domain)
 
     status_code = '200'
     if event_type == "view_submission":
@@ -689,7 +689,7 @@ def create_feedback_modal(trigger_id, acronym):
 
     print("response: " + str(response.status) + " " + str(response.data))
 
-def persistDecision(acronym, userId, decision):
+def persistDecision(acronym, userId, decision, team_domain):
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
 
     if len(result['Items']) == 0:
@@ -733,7 +733,7 @@ def persistDecision(acronym, userId, decision):
             response = update_reviewers(acronym, reviewers, decisionStr)
 
     if len(reviewers) >= REVIEWERS_MAX:
-        notify_approval_response(acronym, decision, requester_id)
+        notify_approval_response(acronym, decision, requester_id, team_domain)
 
     return {
         "statusCode": response['ResponseMetadata']['HTTPStatusCode']
