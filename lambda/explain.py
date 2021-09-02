@@ -299,7 +299,7 @@ def lambda_handler(event, context):
     print(str(command) + ' ' + str(text) + ' -> ' + str(response) + ',original: ' + str(msg_map))
 
     return {
-        "response_type": "in_channel",
+        "response_type": "ephemeral",
         "attachments": [
             {
                 "color": attachment_color,
