@@ -113,7 +113,8 @@ class ExplainBotDeniedDatabaseStack(cdk.Stack):
         acronym_denied_table = _dynamo.Table(
             self, id="explainDeniedAcronymTable",
             table_name="explaindeniedacronymtable"+stage.lower(),
-            partition_key=_dynamo.Attribute(name="Acronym_id", type=_dynamo.AttributeType.STRING),
+            partition_key=_dynamo.Attribute(name="Acronym", type=_dynamo.AttributeType.STRING),
+            sort_key=_dynamo.Attribute(name="Deleted_at", type=_dynamo.AttributeType.STRING),
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
