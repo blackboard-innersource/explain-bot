@@ -12,7 +12,7 @@ from boto3.dynamodb.conditions import Key
 import urllib3
 from datetime import datetime
 from datetime import date
-from explain import attachment_color
+from explain import attachment_color, explain
 import re
 
 # Get the service resource.
@@ -47,22 +47,6 @@ APPROVERS = approver_str['Parameter']['Value'].split(',')
 
 def get_body(event):
     return base64.b64decode(str(event['body'])).decode('ascii')
-
-
-@lru_cache(maxsize=60)
-def explain(acronym):
-    results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
-
-    try:
-        item = results['Items'][0]
-
-        retval = item['Acronym'] + " - " + item['Definition'] + "\n---\n*Details*: " + item['Meaning'] + "\n*Notes*: " + \
-                 item['Notes']
-
-    except:
-        retval = f'Acronym *{acronym}* is not defined. Do you want to add it? Type `/define (acronym) +<definition>`'
-
-    return retval
 
 
 @lru_cache(maxsize=60)
@@ -393,6 +377,45 @@ def notify_invalid_acronym(user_id, acronym):
     print("response: " + str(response.status) + " " + str(response.data))
 
 
+def delete_message(response_url):
+    body = {
+        "delete_original": "true"
+    }
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    print("headers: " + str(headers))
+    
+    try:
+
+        response = http.request('POST', response_url, body=json.dumps(body),
+                                headers=headers)
+        print("delete response: " + str(response.status) + " " + str(response.data))
+        
+    except:
+        print("Error deleting message to post in channel")
+        
+
+def post_message_in_channel(channel, acronym):
+    body = {
+        "channel": channel,
+        "attachments": [
+            {
+                "color": attachment_color,
+                "blocks": explain(acronym)
+            }
+        ]
+    }
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OAUTH_TOKEN
+    }
+    print("headers: " + str(headers))
+    
+    response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
+    print("response: " + str(response.status) + " " + str(response.data))
+
+
 def cleanup_acronym(acronym):
     return re.sub("[^0-9a-zA-Z]+", "", acronym.upper())
 
@@ -475,23 +498,31 @@ def lambda_handler(event, context):
 
     # Check which action was sent
     if event_type == "block_actions" and actions is not None:
-        # Obtain required data
+        # Obtain the channel id
+        channel = payload['channel']['id']
+        
+        action_id = actions[0]['action_id']
+        
+        if action_id == 'post_in_channel':
+            response_url = payload['response_url']
+            acronym = str(actions[0]['value'])
+            delete_message(response_url)
+            return post_message_in_channel(channel, acronym)
+            
+         # Obtain required data
         acronym, definition, meaning, notes, team_domain, user_name, user_id = get_data_from_payload(payload)
+
+        value = actions[0]['value']
 
         # Obtain the date when acronym was requested
         print("Submitted: " + str(payload['message']['attachments'][0]['blocks'][1]['fields'][1]['text']))
         date_requested = payload['message']['attachments'][0]['blocks'][1]['fields'][1]['text'][18:]
-
-        # Obtain the channel id i.e approver id
-        channel = payload['channel']['id']
 
         # Obtain the message's timestamp to be updated
         message_ts = payload['message']['ts']
 
         # Obtain the appover id
         approver_id = payload['user']['id']
-
-        value = actions[0]['value']
 
         if value == 'Approve':
             update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
