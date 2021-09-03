@@ -151,6 +151,32 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                         "type": "divider"
                     },
                     {
+                        "type": "input",
+                        "block_id": "feedbak_block",
+                        "optional": True,
+                        "element": {
+                            "max_length": 500,
+                            "type": "plain_text_input",
+                            "action_id": "meaning_input",
+                            "multiline": True,
+                            "placeholder": {
+                                "type": "plain_text",
+                                "text": "Provide some feedback to the user"
+                            }
+                        },
+                        "label": {
+                            "type": "plain_text",
+                            "text": "Feedback:"
+                        }
+                    } if update == False else
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "feedback_msgs"
+                        }
+                    },
+                    {
                         "type": "actions",
                         "elements": [
                             {
