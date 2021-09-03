@@ -114,7 +114,7 @@ class ExplainBotDeniedDatabaseStack(cdk.Stack):
             self, id="explainDeniedAcronymTable",
             table_name="explaindeniedacronymtable"+stage.lower(),
             partition_key=_dynamo.Attribute(name="Acronym", type=_dynamo.AttributeType.STRING),
-            #sort_key=_dynamo.Attribute(name="Deleted_at", type=_dynamo.AttributeType.STRING),
+            sort_key=_dynamo.Attribute(name="Deleted_at", type=_dynamo.AttributeType.STRING),
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
@@ -268,12 +268,12 @@ class ExplainSlackBotStack(cdk.Stack):
             )
         self.url_output = api_stack.url_output
 
-        # ExplainBotDeniedDatabaseStack(
-        #     self, "DeniedDatabaseStack",
-        #     stage = stage,
-        #     explain_bot_lambda=lambda_stack.explain_bot_lambda, 
-        #     add_meaning_lambda=lambda_stack.add_meaning_lambda
-        # )
+        ExplainBotDeniedDatabaseStack(
+            self, "DeniedDatabaseStack",
+            stage = stage,
+            explain_bot_lambda=lambda_stack.explain_bot_lambda, 
+            add_meaning_lambda=lambda_stack.add_meaning_lambda
+        )
 
         database_stack = ExplainBotDatabaseStack(
             self, "DatabaseStack",
