@@ -168,14 +168,15 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                             "type": "plain_text",
                             "text": "Feedback:"
                         }
-                    } if update == False else
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "feedback_msgs"
-                        }
-                    },
+                    } 
+                    # if update == False else
+                    # {
+                    #     "type": "section",
+                    #     "text": {
+                    #         "type": "mrkdwn",
+                    #         "text": "feedback_msgs"
+                    #     }
+                    # },
                     {
                         "type": "actions",
                         "elements": [
