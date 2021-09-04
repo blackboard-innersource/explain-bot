@@ -109,11 +109,12 @@ class ExplainBotDeniedDatabaseStack(cdk.Stack):
             **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-                # Define dynamoDb table
+        # Define dynamoDb table
         acronym_denied_table = _dynamo.Table(
             self, id="explainDeniedAcronymTable",
-            table_name="explaindeniedacronymtable"+stage.lower(),
+            table_name="explaindeniedacronymstable"+stage.lower(),
             partition_key=_dynamo.Attribute(name="Acronym", type=_dynamo.AttributeType.STRING),
+            sort_key=_dynamo.Attribute(name="Deleted_at", type=_dynamo.AttributeType.STRING),
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
