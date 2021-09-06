@@ -20,6 +20,7 @@ dynamodb = boto3.resource('dynamodb')
 
 # set environment variable
 TABLE_NAME = os.environ['TABLE_NAME']
+DENIED_TABLE_NAME = os.environ['TABLE_DENIED_NAME']
 stage = os.environ['STAGE'].lower()
 
 APPROVERS_STR = 'Approvers'
@@ -32,6 +33,7 @@ REQUEST_TIMESTAMP = 'RequestTimestamp'
 REVIEWERS_MAX = 3
 
 table = dynamodb.Table(TABLE_NAME)
+denied_table = dynamodb.Table(DENIED_TABLE_NAME)
 http = urllib3.PoolManager()
 
 ssm = boto3.client('ssm', region_name='us-east-2')
@@ -168,7 +170,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                             "type": "plain_text",
                             "text": "Feedback:"
                         }
-                    } 
+                    }, 
                     # if update == False else
                     # {
                     #     "type": "section",
@@ -756,7 +758,20 @@ def persistDecision(acronym, userId, decision, team_domain):
                 return {"statusCode": 404}
 
             item = result['Items'][0]
-            results = table.put_item( item )
+            results = denied_table.put_item(
+                Item={
+                    'Acronym': item.get("Acronym", []),
+                    'Deleted_at': int(datetime.utcnow().timestamp()),
+                    'Definition': item.get("Definition", []),
+                    'Meaning': item.get("Meaning", []),
+                    'Notes': item.get("Notes", []),
+                    REQUESTER_STR: item.get("Requester", []),
+                    'RequesterName': item.get("RequesterName", []),
+                    APPROVAL_STR: item.get("Approval", []),
+                    REQUEST_TIMESTAMP: item.get("RequestTimestamp", []),
+                    'TeamDomain': item.get("TeamDomain", [])
+                }
+            )
 
             print(str(results))
 
