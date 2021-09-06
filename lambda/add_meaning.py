@@ -750,6 +750,19 @@ def persistDecision(acronym, userId, decision, team_domain):
         update_form_closed(item)
     else:
         if not decision and len(reviewers) >= REVIEWERS_MAX:
+            result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+
+            if len(result['Items']) == 0:
+                return {"statusCode": 404}
+
+            item = result['Items'][0]
+            results = table.put_item( item )
+
+            print(str(results))
+
+            result = results['ResponseMetadata']['HTTPStatusCode']
+            print("Result: " + str(result))
+            
             response = table.delete_item(
                 Key={
                     'Acronym': acronym
