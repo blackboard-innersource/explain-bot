@@ -144,7 +144,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                             "max_length": 500,
                             "type": "plain_text_input",
                             "action_id": "plain_text_feedback-action",
-                            "multiline": True,
+                            "multiline": False,
                             "placeholder": {
                                 "type": "plain_text",
                                 "text": "Provide some feedback to the user"
@@ -190,13 +190,6 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                         "text": {
                             "type": "mrkdwn",
                             "text": ":white_check_mark: *Your choice has been saved successfully!*\n"
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "*Feedback from approvers:*\n" + (feedback if feedback != None and feedback != "" else "There is no feedback yet")
                         }
                     }
                 ]
@@ -604,7 +597,7 @@ def lambda_handler(event, context):
             trigger_id = payload['trigger_id']
             approver_messages = persist_feedback_from_approver(payload)
             update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
-                                 channel, False, message_ts,approver_messages)
+                                 channel, message_ts,approver_messages)
             return persistDecision(acronym, approver_id, False, team_domain)
 
     status_code = '200'
@@ -634,7 +627,7 @@ def persist_feedback_from_approver(payload):
     feedback = payload['state']['values']['feedback_block']['plain_text_feedback-action']['value']
     print( "Feedback: ", feedback )
 
-    acronym = payload['view']['blocks'][0]['element']['initial_value']
+    acronym = payload['message']['attachments'][0]['blocks'][1]['fields'][0]['text'][12:]
     print( "Acronym: ", acronym )
 
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
@@ -648,7 +641,7 @@ def persist_feedback_from_approver(payload):
     message_data = {
         'approverId': payload['user']['id'],
         'approverUsername': payload['user']['username'],
-        'message': payload['view']['state']['values']['feedback_block']['plain_text_feedback-action']['value'],
+        'message': feedback,
     }
     approver_messages.append(message_data)
     
@@ -709,7 +702,6 @@ def update_form_closed(item, team_domain):
             print("response: " + str(response.status) + " " + str(response.data))
     except:
         print("Error in update_form_closed")
-
 
 def update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, 
     date_requested, channel, message_ts,feedback_msgs):
