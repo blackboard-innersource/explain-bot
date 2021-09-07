@@ -138,7 +138,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                     },
                     {
                         "type": "input",
-                        "block_id": "feedbak_block",
+                        "block_id": "feedback_block",
                         "optional": True,
                         "element": {
                             "max_length": 500,
@@ -609,7 +609,6 @@ def lambda_handler(event, context):
 
     status_code = '200'
     if event_type == "view_submission":
-        callback_id = payload['view']['callback_id']
         acronym, definition, meaning, notes, team_domain, user_name, user_id = get_data_from_payload(payload)
 
         # Define acronym (persist in DB) and send approval request to approvers
