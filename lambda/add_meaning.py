@@ -159,7 +159,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "*Feedback from approvers:*\n" + "feedback_msgs"
+                            "text": "*Feedback from approvers:*\n" + feedback
                         }
                     }
                     ,{
@@ -598,18 +598,18 @@ def lambda_handler(event, context):
 
         if value == 'Approve':
             update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, 
-                user_name, date_requested, channel, message_ts)
+                user_name, date_requested, channel, message_ts,"")
             return persistDecision(acronym, approver_id, True, team_domain)
         if value == 'Deny':
             trigger_id = payload['trigger_id']
-            persist_feedback_from_approver(payload)
+            approver_messages = persist_feedback_from_approver(payload)
             update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
-                                 channel, False, message_ts)
+                                 channel, False, message_ts,approver_messages)
             return persistDecision(acronym, approver_id, False, team_domain)
 
     status_code = '200'
     if event_type == "view_submission":
-        callback_id = payload['view']['callback_id'
+        callback_id = payload['view']['callback_id']
         acronym, definition, meaning, notes, team_domain, user_name, user_id = get_data_from_payload(payload)
 
         # Define acronym (persist in DB) and send approval request to approvers
@@ -664,6 +664,8 @@ def persist_feedback_from_approver(payload):
         ReturnValues="UPDATED_NEW"
     )
 
+    return approver_messages
+
 def update_form_closed(item, team_domain):
     try:
         approvers_message_list = item['ApproverMessages']
@@ -711,9 +713,9 @@ def update_form_closed(item, team_domain):
 
 
 def update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, 
-    date_requested, channel, message_ts):
+    date_requested, channel, message_ts,feedback_msgs):
     update = True
-    feedback = None
+    feedback = build_feedback_messages_list(feedback_msgs, team_domain)
 
     if meaning == "":
         meaning = "-"
@@ -778,6 +780,7 @@ def persistDecision(acronym, userId, decision, team_domain):
                 Item={
                     'Acronym': item.get("Acronym", ""),
                     'Deleted_at': str(datetime.utcnow().timestamp()),
+                    'ApproverMessages': item.get("ApproverMessages", []),
                     'Definition': item.get("Definition", ""),
                     'Meaning': item.get("Meaning", ""),
                     'Notes': item.get("Notes", ""),
