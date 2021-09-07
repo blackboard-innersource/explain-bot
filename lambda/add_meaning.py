@@ -143,7 +143,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                         "element": {
                             "max_length": 500,
                             "type": "plain_text_input",
-                            "action_id": "meaning_input",
+                            "action_id": "plain_text_feedback-action",
                             "multiline": True,
                             "placeholder": {
                                 "type": "plain_text",
@@ -602,6 +602,7 @@ def lambda_handler(event, context):
             return persistDecision(acronym, approver_id, True, team_domain)
         if value == 'Deny':
             trigger_id = payload['trigger_id']
+            persist_feedback_from_approver(payload)
             update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
                                  channel, False, message_ts)
             return persistDecision(acronym, approver_id, False, team_domain)
@@ -630,6 +631,38 @@ def lambda_handler(event, context):
         "statusCode": status_code
     }
 
+def persist_feedback_from_approver(payload):
+    feedback = payload['state']['values']['feedback_block']['plain_text_feedback-action']['value']
+    print( "Feedback: ", feedback )
+
+    acronym = payload['view']['blocks'][0]['element']['initial_value']
+    print( "Acronym: ", acronym )
+
+    result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+
+    if len(result['Items']) == 0:
+        return { "statusCode": 404 }
+
+    item = result['Items'][0]
+    approver_messages = item.get("ApproverFeedbackMessages", [])
+
+    message_data = {
+        'approverId': payload['user']['id'],
+        'approverUsername': payload['user']['username'],
+        'message': payload['view']['state']['values']['feedback_block']['plain_text_feedback-action']['value'],
+    }
+    approver_messages.append(message_data)
+    
+    table.update_item(
+        Key={
+            'Acronym': acronym
+        },
+        UpdateExpression=f"set ApproverFeedbackMessages=:a",
+        ExpressionAttributeValues={
+            ':a': approver_messages,
+        },
+        ReturnValues="UPDATED_NEW"
+    )
 
 def update_form_closed(item, team_domain):
     try:
