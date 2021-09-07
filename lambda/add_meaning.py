@@ -259,9 +259,10 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
 
 def build_feedback_messages_list(approver_messages, team_domain):
     feedback_msgs = ""
+    user_name = [word.capitalize() for word in feedback['approverUsername'].split(".")]
     for feedback in approver_messages:
         print( "ApproverFeedbackMessages: ", feedback['message'] )
-        feedback_msgs += "• *<https://" + team_domain + ".slack.com/team/" + feedback['approverId'] + "|" + feedback['approverUsername'] + ":>* " + feedback['message'] + "\n"
+        feedback_msgs += "• *<https://" + team_domain + ".slack.com/team/" + feedback['approverId'] + "|" + user_name + ":>* " + feedback['message'] + "\n"
     return feedback_msgs
 
 
@@ -282,11 +283,6 @@ def notify_approval_response(acronym, approved, requester_id, team_domain, feedb
                 ]
     else:
         result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
-
-        if len(result['Items']) == 0:
-            return { "statusCode": 404 }
-
-        item = result['Items'][0]
         feedback = build_feedback_messages_list(feedback_msgs, team_domain)
         message = f"Sorry, your submission for *{acronym}* has not been approved at this time."
         blocks = [
@@ -503,18 +499,10 @@ def get_data_from_payload(payload):
     return acronym, definition, meaning, notes, team_domain, user_name, user_id
 
 
-def update_approvers_feedback_section(item, approver_messages, payload):
-    acronym = item['Acronym']
-    definition = item['Definition']
-    meaning = item['Meaning']
-    notes = item['Notes']
-    team_domain = payload['team']['domain']
-    user_id = payload['user']['id']
-    user_name = [word.capitalize() for word in payload['user']['name'].split(".")]
+def update_approvers_feedback_section(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,approver_messages):
     user_name_capitalized = " ".join(user_name)
-    date_requested = datetime.fromtimestamp(item['RequestTimestamp']).strftime("%d/%m/%Y")
     feedback = build_feedback_messages_list(approver_messages, team_domain)
-    approvers_message_list = item['ApproverMessages']
+    approvers_message_list = approver_messages
 
     for message in approvers_message_list:
         approver_channel = message['channel']
@@ -595,8 +583,7 @@ def lambda_handler(event, context):
         if value == 'Deny':
             trigger_id = payload['trigger_id']
             approver_messages = persist_feedback_from_approver(payload)
-            update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,
-                                 channel, message_ts,approver_messages)
+            update_approvers_feedback_section(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,approver_messages)
             return persistDecision(acronym, approver_id, False, team_domain)
 
     status_code = '200'
@@ -738,7 +725,7 @@ def persistDecision(acronym, userId, decision, team_domain):
     reviewers = item.get(decisionStr, [])
     approval_status = item.get(APPROVAL_STR)
     requester_id = item.get(REQUESTER_STR)
-    feedback_msgs = item.get("ApproverMessages", [])
+    feedback_msgs = item.get("ApproverFeedbackMessages", [])
 
     # TODO: Ignore approval action
     if checkAlreadyReviewed(result, userId) or approval_status == APPROVAL_STATUS_APPROVED:
