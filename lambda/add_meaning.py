@@ -265,7 +265,7 @@ def build_feedback_messages_list(approver_messages, team_domain):
     return feedback_msgs
 
 
-def notify_approval_response(acronym, approved, requester_id, team_domain):
+def notify_approval_response(acronym, approved, requester_id, team_domain, feedback_msgs):
     print("Sending approval response...")
     blocks = []
 
@@ -287,8 +287,7 @@ def notify_approval_response(acronym, approved, requester_id, team_domain):
             return { "statusCode": 404 }
 
         item = result['Items'][0]
-        approver_messages = item.get("ApproverFeedbackMessages", [])
-        feedback = build_feedback_messages_list(approver_messages, team_domain)
+        feedback = build_feedback_messages_list(feedback_msgs, team_domain)
         message = f"Sorry, your submission for *{acronym}* has not been approved at this time."
         blocks = [
                     {
@@ -739,6 +738,7 @@ def persistDecision(acronym, userId, decision, team_domain):
     reviewers = item.get(decisionStr, [])
     approval_status = item.get(APPROVAL_STR)
     requester_id = item.get(REQUESTER_STR)
+    feedback_msgs = item.get("ApproverMessages", [])
 
     # TODO: Ignore approval action
     if checkAlreadyReviewed(result, userId) or approval_status == APPROVAL_STATUS_APPROVED:
@@ -798,7 +798,7 @@ def persistDecision(acronym, userId, decision, team_domain):
             response = update_reviewers(acronym, reviewers, decisionStr)
 
     if len(reviewers) >= REVIEWERS_MAX:
-        notify_approval_response(acronym, decision, requester_id, team_domain)
+        notify_approval_response(acronym, decision, requester_id, team_domain, feedback_msgs)
 
     return {
         "statusCode": response['ResponseMetadata']['HTTPStatusCode']
