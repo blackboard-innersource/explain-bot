@@ -412,6 +412,7 @@ def post_message_in_channel(channel, acronym):
     
     response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
     print("response: " + str(response.status) + " " + str(response.data))
+    return response
 
 
 def cleanup_acronym(acronym):
@@ -541,8 +542,13 @@ def lambda_handler(event, context):
         if action_id == 'post_in_channel':
             response_url = payload['response_url']
             acronym = str(actions[0]['value'])
-            delete_message(response_url)
-            return post_message_in_channel(channel, acronym)
+            post_response = post_message_in_channel(channel, acronym)
+            data = json.loads(post_response.data.decode('utf-8'))
+            if data.get('ok'):
+                return delete_message(response_url)
+            else:
+                print("Not able to post message in channel")
+                return
             
          # Obtain required data
         acronym, definition, meaning, notes, team_domain, user_name, user_id = get_data_from_payload(payload)

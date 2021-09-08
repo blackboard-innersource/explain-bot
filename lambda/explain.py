@@ -80,6 +80,13 @@ def explain(acronym):
                     "type": "divider"
                 },
                 {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "If you are in a private channel, invite @Define Bot to be able to post this message for everyone"
+                    }
+                },
+                {
                     "type": "actions",
                     "elements": [
                         {
