@@ -28,7 +28,7 @@ class ExplainSlackBotPipelineStack(cdk.Stack):
                 oauth_token=cdk.SecretValue.secrets_manager('GITHUB_TOKEN_NAME'),
                 owner='blackboard-innersource',
                 repo='explain-bot',
-                branch='feature/persist-denied-acronyms',
+                branch='develop',
                 trigger=cpactions.GitHubTrigger.POLL
             ),
             synth_action=SimpleSynthAction(
