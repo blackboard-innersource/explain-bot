@@ -259,10 +259,11 @@ def create_approval_request(acronym, definition, meaning, notes, team_domain, us
 
 def build_feedback_messages_list(approver_messages, team_domain):
     feedback_msgs = ""
-    user_name = [word.capitalize() for word in feedback['approverUsername'].split(".")]
     for feedback in approver_messages:
+        user_name = [word.capitalize() for word in feedback['approverUsername'].split(".")]
+        user_name_capitalized = " ".join(user_name)
         print( "ApproverFeedbackMessages: ", feedback['message'] )
-        feedback_msgs += "• *<https://" + team_domain + ".slack.com/team/" + feedback['approverId'] + "|" + user_name + ":>* " + feedback['message'] + "\n"
+        feedback_msgs += "• *<https://" + team_domain + ".slack.com/team/" + feedback['approverId'] + "|" + user_name_capitalized + ":>* " + feedback['message'] + "\n"
     return feedback_msgs
 
 
@@ -502,7 +503,14 @@ def get_data_from_payload(payload):
 def update_approvers_feedback_section(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,approver_messages):
     user_name_capitalized = " ".join(user_name)
     feedback = build_feedback_messages_list(approver_messages, team_domain)
-    approvers_message_list = approver_messages
+
+    result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+
+    if len(result['Items']) == 0:
+        return { "statusCode": 404 }
+
+    item = result['Items'][0]
+    approvers_message_list = item.get("ApproverMessages", [])
 
     for message in approvers_message_list:
         approver_channel = message['channel']
@@ -526,6 +534,8 @@ def update_approvers_feedback_section(acronym, definition, meaning, notes, team_
 
         response = http.request('POST', 'https://slack.com/api/chat.update', body=json.dumps(modal), headers=headers)
         print("response: " + str(response.status) + " " + str(response.data))
+    
+    return { "statusCode": 200 }
 
 
 def lambda_handler(event, context):
@@ -577,14 +587,20 @@ def lambda_handler(event, context):
         approver_id = payload['user']['id']
 
         if value == 'Approve':
-            update_approval_form(acronym, definition, meaning, notes, team_domain, user_id, 
-                user_name, date_requested, channel, message_ts,"")
-            return persistDecision(acronym, approver_id, True, team_domain)
+            result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
+
+            if len(result['Items']) == 0:
+                return { "statusCode": 404 }
+
+            item = result['Items'][0]
+            approver_messages = item.get("ApproverFeedbackMessages", [])
+            persistDecision(acronym, approver_id, True, team_domain)
+            return update_approvers_feedback_section(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,approver_messages)
         if value == 'Deny':
             trigger_id = payload['trigger_id']
             approver_messages = persist_feedback_from_approver(payload)
-            update_approvers_feedback_section(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,approver_messages)
-            return persistDecision(acronym, approver_id, False, team_domain)
+            persistDecision(acronym, approver_id, False, team_domain)
+            return update_approvers_feedback_section(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,approver_messages)
 
     status_code = '200'
     if event_type == "view_submission":
@@ -784,6 +800,8 @@ def persistDecision(acronym, userId, decision, team_domain):
         else:
             response = update_reviewers(acronym, reviewers, decisionStr)
 
+    update_approvers_feedback_section(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,approver_messages)
+    
     if len(reviewers) >= REVIEWERS_MAX:
         notify_approval_response(acronym, decision, requester_id, team_domain, feedback_msgs)
 
