@@ -86,7 +86,7 @@ def explain(acronym, post_option):
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": "If you are in a private channel, invite @define_bot to be able to post this message for everyone"
+                        "text": ":definebot: *If you are in a private channel, invite @define_bot to be able to post this message for everyone*"
                     }
                 }
                 post_button = {
