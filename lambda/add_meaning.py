@@ -93,6 +93,8 @@ def define(acronym, definition, meaning, notes, response_url, user_id, user_name
 
 def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, user_name, 
     date_requested, approver, ts, update, feedback):
+    if feedback == None or feedback == "":
+        feedback = "There is no feedback yet"
     return {
         "attachments": [
             {
@@ -501,7 +503,6 @@ def get_data_from_payload(payload):
 
 
 def update_approvers_feedback_section(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,approver_messages):
-    user_name_capitalized = " ".join(user_name)
     feedback = build_feedback_messages_list(approver_messages, team_domain)
 
     result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
@@ -524,7 +525,7 @@ def update_approvers_feedback_section(acronym, definition, meaning, notes, team_
         update = (approver_id in approvers or approver_id in deniers)
 
         modal = get_approval_form(acronym, definition, meaning, notes, team_domain, user_id, 
-            user_name_capitalized, date_requested, approver_channel, ts, update, feedback)
+            user_name, date_requested, approver_channel, ts, update, feedback)
 
         headers = {
             'Content-Type': 'application/json',
@@ -587,13 +588,7 @@ def lambda_handler(event, context):
         approver_id = payload['user']['id']
 
         if value == 'Approve':
-            result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
-
-            if len(result['Items']) == 0:
-                return { "statusCode": 404 }
-
-            item = result['Items'][0]
-            approver_messages = item.get("ApproverFeedbackMessages", [])
+            approver_messages = persist_feedback_from_approver(payload)
             persistDecision(acronym, approver_id, True, team_domain)
             return update_approvers_feedback_section(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,approver_messages)
         if value == 'Deny':
@@ -628,6 +623,9 @@ def lambda_handler(event, context):
 def persist_feedback_from_approver(payload):
     feedback = payload['state']['values']['feedback_block']['plain_text_feedback-action']['value']
     print( "Feedback: ", feedback )
+
+    if feedback == None or feedback == "":
+        return []
 
     acronym = payload['message']['attachments'][0]['blocks'][1]['fields'][0]['text'][12:]
     print( "Acronym: ", acronym )
@@ -799,8 +797,6 @@ def persistDecision(acronym, userId, decision, team_domain):
             update_form_closed(item, team_domain)
         else:
             response = update_reviewers(acronym, reviewers, decisionStr)
-
-    update_approvers_feedback_section(acronym, definition, meaning, notes, team_domain, user_id, user_name, date_requested,approver_messages)
     
     if len(reviewers) >= REVIEWERS_MAX:
         notify_approval_response(acronym, decision, requester_id, team_domain, feedback_msgs)
