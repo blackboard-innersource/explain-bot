@@ -38,7 +38,7 @@ def get_body(event):
     return base64.b64decode(str(event['body'])).decode('ascii')
 
 
-def explain(acronym):
+def explain(acronym, post_option):
     results = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
 
     if len(results['Items']) > 0:
@@ -75,18 +75,21 @@ def explain(acronym):
                             "text": "*Notes:*\n" + notes
                         }
                     ]
-                },
-                {
+                }
+            ]
+            
+            if post_option:
+                divider = {
                     "type": "divider"
-                },
-                {
+                }
+                post_note = {
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": "If you are in a private channel, invite @Define Bot to be able to post this message for everyone"
+                        "text": "If you are in a private channel, invite @define_bot to be able to post this message for everyone"
                     }
-                },
-                {
+                }
+                post_button = {
                     "type": "actions",
                     "elements": [
                         {
@@ -101,7 +104,9 @@ def explain(acronym):
                         }
                     ]
                 }
-            ]
+                definition.append(divider)
+                definition.append(post_note)
+                definition.append(post_button)
 
 
             return definition
@@ -278,6 +283,12 @@ def lambda_handler(event, context):
     team_domain = msg_map.get('team_domain', 'err')
     trigger_id = msg_map.get('trigger_id', 'err')
 
+    response_type = "ephemeral"
+    post_option = True
+    if channel_name == "directmessage":
+        response_type = "in_channel"
+        post_option = False
+
     if (len(text) >= 2):
         acronym = cleanup_acronym(text[0])
 
@@ -300,13 +311,13 @@ def lambda_handler(event, context):
             response = help_response()
 
         else:
-            response = explain(acronym)
+            response = explain(acronym, post_option)
 
     # logging
     print(str(command) + ' ' + str(text) + ' -> ' + str(response) + ',original: ' + str(msg_map))
 
     return {
-        "response_type": "ephemeral",
+        "response_type": response_type,
         "attachments": [
             {
                 "color": attachment_color,

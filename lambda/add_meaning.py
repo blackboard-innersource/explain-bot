@@ -400,7 +400,7 @@ def post_message_in_channel(channel, acronym):
         "attachments": [
             {
                 "color": attachment_color,
-                "blocks": explain(acronym)
+                "blocks": explain(acronym, False)
             }
         ]
     }
