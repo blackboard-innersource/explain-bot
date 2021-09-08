@@ -160,7 +160,7 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "*Feedback from approvers:*\n" + feedback
+                            "text": "*Feedback from reviewers:*\n" + feedback
                         }
                     }
                     ,{
@@ -751,7 +751,7 @@ def persistDecision(acronym, userId, decision, team_domain):
                     'Notes': item.get("Notes", ""),
                     REQUESTER_STR: item.get("Requester", ""),
                     'RequesterName': item.get("RequesterName", ""),
-                    APPROVAL_STR: item.get("Approval", "Denied"),
+                    APPROVAL_STR: item.get("Denied", "Denied"),
                     REQUEST_TIMESTAMP: item.get("RequestTimestamp", ""),
                     'TeamDomain': item.get("TeamDomain", "")
                 }
