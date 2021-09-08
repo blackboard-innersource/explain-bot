@@ -143,7 +143,6 @@ def get_approval_form(acronym, definition, meaning, notes, team_domain, user_id,
                         "block_id": "feedback_block",
                         "optional": True,
                         "element": {
-                            "max_length": 500,
                             "type": "plain_text_input",
                             "action_id": "plain_text_feedback-action",
                             "multiline": False,
@@ -272,23 +271,15 @@ def build_feedback_messages_list(approver_messages, team_domain):
 def notify_approval_response(acronym, approved, requester_id, team_domain, feedback_msgs):
     print("Sending approval response...")
     blocks = []
+    feedback = build_feedback_messages_list(feedback_msgs, team_domain)
 
     if approved == True:
         message = f"Your submission for *{acronym}* was approved. Thanks for contributing!"
-        blocks = [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": message
-                        }
-                    }
-                ]
     else:
-        result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
-        feedback = build_feedback_messages_list(feedback_msgs, team_domain)
         message = f"Sorry, your submission for *{acronym}* has not been approved at this time."
-        blocks = [
+        
+
+    blocks = [
                     {
                         "type": "section",
                         "text": {
@@ -324,25 +315,6 @@ def notify_approval_response(acronym, approved, requester_id, team_domain, feedb
     response = http.request('POST', 'https://slack.com/api/chat.postMessage', body=json.dumps(body), headers=headers)
     print("response: " + str(response.status) + " " + str(response.data))
 
-    data = json.loads(response.data.decode('utf-8'))
-    notification_data = {}
-
-    if data.get('ok'):
-        notification_data = {
-            'channel': data.get('channel'),
-            'ts': data.get('ts')
-        }
-
-        table.update_item(
-            Key={
-                'Acronym': acronym
-            },
-            UpdateExpression=f"set NotificationMessage=:a",
-            ExpressionAttributeValues={
-                ':a': notification_data,
-            },
-            ReturnValues="UPDATED_NEW"
-        )
 
 def notify_pending_approval(user_id, acronym):
     print("Sending pending approval notification...")
