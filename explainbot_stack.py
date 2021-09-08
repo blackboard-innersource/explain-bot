@@ -95,6 +95,39 @@ class ExplainBotApiStack(cdk.Stack):
             integration=add_meaning_lambda_integration
         )
 
+class ExplainBotDeniedDatabaseStack(cdk.Stack):
+
+    table: _dynamo.Table
+
+    def __init__(
+            self, 
+            scope: cdk.Construct, 
+            construct_id: str,
+            stage: str,
+            explain_bot_lambda: _lambda.Function,
+            add_meaning_lambda: _lambda.Function,
+            **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+        # Define dynamoDb table
+        acronym_denied_table = _dynamo.Table(
+            self, id="explainDeniedAcronymTable",
+            table_name="explaindeniedacronymstable"+stage.lower(),
+            partition_key=_dynamo.Attribute(name="Acronym", type=_dynamo.AttributeType.STRING),
+            sort_key=_dynamo.Attribute(name="Deleted_at", type=_dynamo.AttributeType.STRING),
+            removal_policy=cdk.RemovalPolicy.DESTROY
+        )
+
+        self.table = acronym_denied_table
+
+        # Add the table name as an environment variable
+        explain_bot_lambda.add_environment("TABLE_DENIED_NAME", acronym_denied_table.table_name)
+        add_meaning_lambda.add_environment("TABLE_DENIED_NAME", acronym_denied_table.table_name)
+
+        # Give lambdas the ability to read and write to the database table
+        acronym_denied_table.grant_full_access(explain_bot_lambda)
+        acronym_denied_table.grant_full_access(add_meaning_lambda)
+
 class ExplainBotDatabaseStack(cdk.Stack):
 
     table: _dynamo.Table
@@ -234,6 +267,13 @@ class ExplainSlackBotStack(cdk.Stack):
             add_meaning_lambda=lambda_stack.add_meaning_lambda
             )
         self.url_output = api_stack.url_output
+
+        ExplainBotDeniedDatabaseStack(
+            self, "DeniedDatabaseStack",
+            stage = stage,
+            explain_bot_lambda=lambda_stack.explain_bot_lambda, 
+            add_meaning_lambda=lambda_stack.add_meaning_lambda
+        )
 
         database_stack = ExplainBotDatabaseStack(
             self, "DatabaseStack",
