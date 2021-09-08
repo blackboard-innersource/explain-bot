@@ -745,6 +745,7 @@ def persistDecision(acronym, userId, decision, team_domain):
                     'Acronym': item.get("Acronym", ""),
                     'Deleted_at': str(datetime.utcnow().timestamp()),
                     'ApproverMessages': item.get("ApproverMessages", []),
+                    'ApproverFeedbackMessages': item.get("ApproverFeedbackMessages", []),
                     'Definition': item.get("Definition", ""),
                     'Meaning': item.get("Meaning", ""),
                     'Notes': item.get("Notes", ""),
