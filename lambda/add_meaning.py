@@ -55,6 +55,22 @@ def get_body(event):
     return base64.b64decode(str(event["body"])).decode("ascii")
 
 
+def http_request(url, body):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + OAUTH_TOKEN,
+    }
+    # print("headers: " + str(headers))
+    response = http.request(
+        "POST",
+        url,
+        body=json.dumps(body),
+        headers=headers,
+    )
+    print("response: " + str(response.status) + " " + str(response.data))
+    return response
+
+
 @lru_cache(maxsize=60)
 def define(
     acronym, definition, meaning, notes, response_url, user_id, user_name, team_domain
@@ -79,7 +95,7 @@ def define(
     print("Result: " + str(result))
 
     headers = {
-        "Content-Type": "application/plain-text",
+        "Content-Type": "application/plain-text",  # TODO: why plain-text
         "Authorization": "Bearer " + OAUTH_TOKEN,
     }
     print("headers: " + str(headers))
@@ -240,20 +256,7 @@ def create_approval_request(
                 update,
                 feedback,
             )
-
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + OAUTH_TOKEN,
-            }
-            print("headers: " + str(headers))
-
-            response = http.request(
-                "POST",
-                "https://slack.com/api/chat.postMessage",
-                body=json.dumps(modal),
-                headers=headers,
-            )
-            print("response: " + str(response.status) + " " + str(response.data))
+            response = http_request("https://slack.com/api/chat.postMessage", modal)
 
             data = json.loads(response.data.decode("utf-8"))
 
@@ -334,20 +337,7 @@ def notify_approval_response(
         "channel": requester_id,
         "attachments": [{"color": attachment_color, "blocks": blocks}],
     }
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + OAUTH_TOKEN,
-    }
-    print("headers: " + str(headers))
-
-    response = http.request(
-        "POST",
-        "https://slack.com/api/chat.postMessage",
-        body=json.dumps(body),
-        headers=headers,
-    )
-    print("response: " + str(response.status) + " " + str(response.data))
+    http_request("https://slack.com/api/chat.postMessage", body)
 
 
 def notify_pending_approval(user_id, acronym):
@@ -369,20 +359,7 @@ def notify_pending_approval(user_id, acronym):
             }
         ],
     }
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + OAUTH_TOKEN,
-    }
-    print("headers: " + str(headers))
-
-    response = http.request(
-        "POST",
-        "https://slack.com/api/chat.postMessage",
-        body=json.dumps(body),
-        headers=headers,
-    )
-    print("response: " + str(response.status) + " " + str(response.data))
+    http_request("https://slack.com/api/chat.postMessage", body)
 
 
 def notify_invalid_acronym(user_id, acronym):
@@ -406,25 +383,14 @@ def notify_invalid_acronym(user_id, acronym):
             }
         ],
     }
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + OAUTH_TOKEN,
-    }
-    print("headers: " + str(headers))
-
-    response = http.request(
-        "POST",
-        "https://slack.com/api/chat.postMessage",
-        body=json.dumps(body),
-        headers=headers,
-    )
-    print("response: " + str(response.status) + " " + str(response.data))
+    http_request("https://slack.com/api/chat.postMessage", body)
 
 
 def delete_message(response_url):
     body = {"delete_original": "true"}
-    headers = {"Content-Type": "application/json"}
+    headers = {
+        "Content-Type": "application/json"
+    }  # TODO: why it is not using authorization
     print("headers: " + str(headers))
 
     try:
@@ -433,7 +399,6 @@ def delete_message(response_url):
             "POST", response_url, body=json.dumps(body), headers=headers
         )
         print("delete response: " + str(response.status) + " " + str(response.data))
-
     except:
         print("Error deleting message to post in channel")
 
@@ -443,19 +408,7 @@ def post_message_in_channel(channel, acronym):
         "channel": channel,
         "attachments": [{"color": attachment_color, "blocks": explain(acronym, False)}],
     }
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + OAUTH_TOKEN,
-    }
-    print("headers: " + str(headers))
-
-    response = http.request(
-        "POST",
-        "https://slack.com/api/chat.postMessage",
-        body=json.dumps(body),
-        headers=headers,
-    )
-    print("response: " + str(response.status) + " " + str(response.data))
+    response = http_request("https://slack.com/api/chat.postMessage", body)
     return response
 
 
@@ -586,20 +539,7 @@ def update_approvers_feedback_section(
             update,
             feedback,
         )
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + OAUTH_TOKEN,
-        }
-        print("headers: " + str(headers))
-
-        response = http.request(
-            "POST",
-            "https://slack.com/api/chat.update",
-            body=json.dumps(modal),
-            headers=headers,
-        )
-        print("response: " + str(response.status) + " " + str(response.data))
+        http_request("https://slack.com/api/chat.update", modal)
 
     return {"statusCode": 200}
 
@@ -829,20 +769,7 @@ def update_form_closed(item, team_domain):
                 "channel": element["channel"],
                 "ts": element["ts"],
             }
-
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + OAUTH_TOKEN,
-            }
-            print("headers: " + str(headers))
-
-            response = http.request(
-                "POST",
-                "https://slack.com/api/chat.update",
-                body=json.dumps(modal),
-                headers=headers,
-            )
-            print("response: " + str(response.status) + " " + str(response.data))
+            http_request("https://slack.com/api/chat.update", modal)
     except:
         print("Error in update_form_closed")
 
@@ -884,20 +811,7 @@ def update_approval_form(
         update,
         feedback,
     )
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + OAUTH_TOKEN,
-    }
-    print("headers: " + str(headers))
-
-    response = http.request(
-        "POST",
-        "https://slack.com/api/chat.update",
-        body=json.dumps(modal),
-        headers=headers,
-    )
-    print("response: " + str(response.status) + " " + str(response.data))
+    http_request("https://slack.com/api/chat.update", modal)
 
 
 def persistDecision(acronym, userId, decision, team_domain):
