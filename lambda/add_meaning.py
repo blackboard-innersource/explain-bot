@@ -240,7 +240,7 @@ def create_approval_request(
 
     table.update_item(
         Key={"Acronym": acronym},
-        UpdateExpression=f"set ApproverMessages=:a",
+        UpdateExpression="set ApproverMessages=:a",
         ExpressionAttributeValues={
             ":a": approver_messages,
         },
@@ -668,7 +668,7 @@ def persist_feedback_from_approver(payload):
 
     table.update_item(
         Key={"Acronym": acronym},
-        UpdateExpression=f"set ApproverFeedbackMessages=:a",
+        UpdateExpression="set ApproverFeedbackMessages=:a",
         ExpressionAttributeValues={
             ":a": approver_messages,
         },
