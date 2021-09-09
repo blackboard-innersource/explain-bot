@@ -247,10 +247,6 @@ def create_modal(acronym, definition, user_name, channel_name, team_domain, trig
     return returnSingleBlocks(f"Launching definition modal for acronym *{acronym}*...")
 
 
-def cleanup_acronym(acronym):
-    return re.sub("[^0-9a-zA-Z]+", "", acronym.upper())
-
-
 def help_response():
     text = (
         "Hey there, I'm Define Bot :wave: Here are some quick tips to get you started! \n"
@@ -342,11 +338,14 @@ def check_hash(event):
         ).hexdigest()
     )
     print("Generated signature: " + my_signature)
-
     slack_signature = event["headers"]["x-slack-signature"]
     print("Slack signature: " + slack_signature)
 
     return hmac.compare_digest(my_signature, slack_signature)
+
+
+def cleanup_acronym(acronym):
+    return re.sub("[^0-9a-zA-Z]+", "", acronym.upper())
 
 
 def returnSingleBlocks(text):

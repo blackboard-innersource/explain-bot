@@ -55,26 +55,6 @@ def get_body(event):
     return base64.b64decode(str(event["body"])).decode("ascii")
 
 
-def http_request(url, body):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + OAUTH_TOKEN,
-    }
-    # print("headers: " + str(headers))
-    response = http.request(
-        "POST",
-        url,
-        body=json.dumps(body),
-        headers=headers,
-    )
-    print("response: " + str(response.status) + " " + str(response.data))
-    return response
-
-
-def add_simple_section(text):
-    return {"type": "section", "text": {"type": "mrkdwn", "text": text}}
-
-
 @lru_cache(maxsize=60)
 def define(
     acronym, definition, meaning, notes, response_url, user_id, user_name, team_domain
@@ -365,7 +345,6 @@ def delete_message(response_url):
     print("headers: " + str(headers))
 
     try:
-
         response = http.request(
             "POST", response_url, body=json.dumps(body), headers=headers
         )
@@ -381,10 +360,6 @@ def post_message_in_channel(channel, acronym):
     }
     response = http_request("https://slack.com/api/chat.postMessage", body)
     return response
-
-
-def cleanup_acronym(acronym):
-    return re.sub("[^0-9a-zA-Z]+", "", acronym.upper())
 
 
 def get_data_from_payload(payload):
@@ -493,7 +468,7 @@ def update_approvers_feedback_section(
         approvers = item.get("Approvers", [])
         deniers = item.get("Deniers", [])
 
-        # <update> is true for the approvers that already voted
+        # 'update' is true for the approvers that already voted
         update = approver_id in approvers or approver_id in deniers
 
         modal = get_approval_form(
@@ -865,14 +840,12 @@ def update_reviewers(acronym, reviewers, decisionStr):
         },
         ReturnValues="UPDATED_NEW",
     )
-
     return response
 
 
 def checkAlreadyReviewed(result, userId):
     approvers = result["Items"][0].get(APPROVERS_STR, [])
     denyers = result["Items"][0].get(DENIERS_STR, [])
-
     return userId in approvers or userId in denyers
 
 
@@ -893,3 +866,27 @@ def check_hash(event):
     print("Slack signature: " + slack_signature)
 
     return hmac.compare_digest(my_signature, slack_signature)
+
+
+def cleanup_acronym(acronym):
+    return re.sub("[^0-9a-zA-Z]+", "", acronym.upper())
+
+
+def add_simple_section(text):
+    return {"type": "section", "text": {"type": "mrkdwn", "text": text}}
+
+
+def http_request(url, body):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + OAUTH_TOKEN,
+    }
+    # print("headers: " + str(headers))
+    response = http.request(
+        "POST",
+        url,
+        body=json.dumps(body),
+        headers=headers,
+    )
+    print("response: " + str(response.status) + " " + str(response.data))
+    return response
