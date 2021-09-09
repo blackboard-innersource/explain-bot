@@ -678,12 +678,17 @@ def persist_feedback_from_approver(payload):
     return approver_messages
 
 
-def update_form_closed(item, team_domain):
+def update_form_closed(item, team_domain, decision):
     try:
         approvers_message_list = item["ApproverMessages"]
         acronym = item["Acronym"]
         approver_messages = item.get("ApproverFeedbackMessages", [])
         feedback = build_feedback_messages_list(approver_messages, team_domain)
+        approval_message = (
+            f"{acronym} has been approved."
+            if decision is True
+            else f"{acronym} has not been approved."
+        )
         for element in approvers_message_list:
             modal = {
                 "attachments": [
@@ -691,7 +696,7 @@ def update_form_closed(item, team_domain):
                         "color": attachment_color,
                         "blocks": [
                             add_simple_section(
-                                f"*The request for {acronym} is completed.*\n Thanks for contributing, the voting is closed!"
+                                f"*The request for {acronym} is completed.*\n{approval_message}\nThanks for contributing, the voting is closed!"
                             ),
                             add_simple_section(
                                 "*Feedback from approvers:*\n"
@@ -785,7 +790,7 @@ def persistDecision(acronym, userId, decision, team_domain):
             ReturnValues="UPDATED_NEW",
         )
         response = update_reviewers(acronym, reviewers, decisionStr)
-        update_form_closed(item, team_domain)
+        update_form_closed(item, team_domain, decision)
     else:
         if not decision and len(reviewers) >= REVIEWERS_MAX:
             result = table.query(KeyConditionExpression=Key("Acronym").eq(acronym))
@@ -819,7 +824,7 @@ def persistDecision(acronym, userId, decision, team_domain):
             print("Result: " + str(result))
 
             response = table.delete_item(Key={"Acronym": acronym})
-            update_form_closed(item, team_domain)
+            update_form_closed(item, team_domain, decision)
         else:
             response = update_reviewers(acronym, reviewers, decisionStr)
 
