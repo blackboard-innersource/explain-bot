@@ -71,6 +71,10 @@ def http_request(url, body):
     return response
 
 
+def add_simple_section(text):
+    return {"type": "section", "text": {"type": "mrkdwn", "text": text}}
+
+
 @lru_cache(maxsize=60)
 def define(
     acronym, definition, meaning, notes, response_url, user_id, user_name, team_domain
@@ -95,7 +99,7 @@ def define(
     print("Result: " + str(result))
 
     headers = {
-        "Content-Type": "application/plain-text",  # TODO: why plain-text
+        "Content-Type": "application/plain-text",  # TODO: Not using json
         "Authorization": "Bearer " + OAUTH_TOKEN,
     }
     print("headers: " + str(headers))
@@ -136,19 +140,15 @@ def get_approval_form(
             {
                 "color": attachment_color,
                 "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "*You have a new request:*\n<https://"
-                            + team_domain
-                            + ".slack.com/team/"
-                            + user_id
-                            + "|"
-                            + user_name
-                            + " - New acronym request>",
-                        },
-                    },
+                    add_simple_section(
+                        "*You have a new request:*\n<https://"
+                        + team_domain
+                        + ".slack.com/team/"
+                        + user_id
+                        + "|"
+                        + user_name
+                        + " - New acronym request>",
+                    ),
                     {
                         "type": "section",
                         "fields": [
@@ -161,10 +161,7 @@ def get_approval_form(
                             {"type": "mrkdwn", "text": "*Details:*\n" + meaning},
                         ],
                     },
-                    {
-                        "type": "section",
-                        "text": {"type": "mrkdwn", "text": "*Notes:*\n" + notes},
-                    },
+                    add_simple_section("*Notes:*\n" + notes),
                     {"type": "divider"},
                     {
                         "type": "input",
@@ -182,13 +179,7 @@ def get_approval_form(
                         "label": {"type": "plain_text", "text": "Feedback:"},
                     }
                     if update is False
-                    else {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "*Feedback from reviewers:*\n" + feedback,
-                        },
-                    },
+                    else add_simple_section("*Feedback from reviewers:*\n" + feedback),
                     {
                         "type": "actions",
                         "elements": [
@@ -207,13 +198,9 @@ def get_approval_form(
                         ],
                     }
                     if update is False
-                    else {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": ":white_check_mark: *Your choice has been saved successfully!*\n",
-                        },
-                    },
+                    else add_simple_section(
+                        ":white_check_mark: *Your choice has been saved successfully!*\n"
+                    ),
                 ],
             }
         ],
@@ -318,19 +305,15 @@ def notify_approval_response(
         message = f"Sorry, your submission for *{acronym}* has not been approved at this time."
 
     blocks = [
-        {"type": "section", "text": {"type": "mrkdwn", "text": message}},
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "*Feedback from approvers:*\n"
-                + (
-                    feedback
-                    if feedback is not None and feedback != ""
-                    else "There is no feedback"
-                ),
-            },
-        },
+        add_simple_section(message),
+        add_simple_section(
+            "*Feedback from approvers:*\n"
+            + (
+                feedback
+                if feedback is not None and feedback != ""
+                else "There is no feedback"
+            ),
+        ),
     ]
 
     body = {
@@ -348,13 +331,9 @@ def notify_pending_approval(user_id, acronym):
             {
                 "color": attachment_color,
                 "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": f"*Submission successful!*\n Your submission for *{acronym}* has been received and is being reviewed.",
-                        },
-                    }
+                    add_simple_section(
+                        f"*Submission successful!*\n Your submission for *{acronym}* has been received and is being reviewed."
+                    ),
                 ],
             }
         ],
@@ -370,15 +349,9 @@ def notify_invalid_acronym(user_id, acronym):
             {
                 "color": attachment_color,
                 "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "*Invalid request:* The acronym "
-                            + acronym
-                            + " is already defined.",
-                        },
-                    }
+                    add_simple_section(
+                        f"*Invalid request:* The acronym {acronym} is already defined."
+                    ),
                 ],
             }
         ],
@@ -388,9 +361,7 @@ def notify_invalid_acronym(user_id, acronym):
 
 def delete_message(response_url):
     body = {"delete_original": "true"}
-    headers = {
-        "Content-Type": "application/json"
-    }  # TODO: why it is not using authorization
+    headers = {"Content-Type": "application/json"}  # TODO: Not using authorization
     print("headers: " + str(headers))
 
     try:
@@ -744,25 +715,17 @@ def update_form_closed(item, team_domain):
                     {
                         "color": attachment_color,
                         "blocks": [
-                            {
-                                "type": "section",
-                                "text": {
-                                    "type": "mrkdwn",
-                                    "text": f"*The request for {acronym} is completed.*\n Thanks for contributing, the voting is closed!",
-                                },
-                            },
-                            {
-                                "type": "section",
-                                "text": {
-                                    "type": "mrkdwn",
-                                    "text": "*Feedback from approvers:*\n"
-                                    + (
-                                        feedback
-                                        if feedback is not None and feedback != ""
-                                        else "There is no feedback"
-                                    ),
-                                },
-                            },
+                            add_simple_section(
+                                f"*The request for {acronym} is completed.*\n Thanks for contributing, the voting is closed!"
+                            ),
+                            add_simple_section(
+                                "*Feedback from approvers:*\n"
+                                + (
+                                    feedback
+                                    if feedback is not None and feedback != ""
+                                    else "There is no feedback"
+                                )
+                            ),
                         ],
                     }
                 ],
