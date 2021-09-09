@@ -60,6 +60,10 @@ Now click _Slash Commands_ in the left-hand navigation and then click the pencil
 
 Now simply login to Blackboard-Sandbox.slack.com with your AFDS credentials, and type `/define lace` and press ENTER. Of course if you called it something other than `/define`, use your command. It should return the definition. Now, assuming you added yourself as an "UPDATER", type `/define CDK Cloud Development Kit` and press ENTER. This will load a modal that you can accept as is or edit and then click _Submit_. You have now defined a new acronym available to all. 
 
+## Code Linting & Formatting
+
+Linting is implemented in the pre-commit process, so it's executed before committing the changes to ensure that code styling issues caused by bad patterns are not introduced in the code. Make sure you run `pip install --upgrade -r requirements-dev.txt` to install the linting and formatting dependencies, then execute `pre-commit install` to install git hooks in your `.git/` directory. Before doing a commit, styling issues are fixed automatically. You must address manually those issues that could not be fixed by the tool. To check for code issues run `pre-commit run --all-files`.
+
 ## How to contribute
 
 This is 100% MVP level. There are a number of enhancements, which I will add as issues to this repo. In addition, I wrote this to learn CDK, so feel free to help improve the CDK implementation. I only ask that you create an issue and document what you are changing and why, so I, as well as anyone else that comes along, can learn why you have made that change. 
