@@ -562,33 +562,35 @@ def lambda_handler(event, context):
 
         if value == "Approve":
             approver_messages = persist_feedback_from_approver(payload)
-            persistDecision(acronym, approver_id, True, team_domain)
-            return update_approvers_feedback_section(
-                acronym,
-                definition,
-                meaning,
-                notes,
-                team_domain,
-                user_id,
-                user_name,
-                date_requested,
-                approver_messages,
-            )
+            decision = persistDecision(acronym, approver_id, True, team_domain)
+            if decision['message'] is False:
+                return update_approvers_feedback_section(
+                    acronym,
+                    definition,
+                    meaning,
+                    notes,
+                    team_domain,
+                    user_id,
+                    user_name,
+                    date_requested,
+                    approver_messages,
+                )
         if value == "Deny":
             # trigger_id = payload["trigger_id"]
             approver_messages = persist_feedback_from_approver(payload)
-            persistDecision(acronym, approver_id, False, team_domain)
-            return update_approvers_feedback_section(
-                acronym,
-                definition,
-                meaning,
-                notes,
-                team_domain,
-                user_id,
-                user_name,
-                date_requested,
-                approver_messages,
-            )
+            decision = persistDecision(acronym, approver_id, False, team_domain)
+            if decision['message'] is False:
+                return update_approvers_feedback_section(
+                    acronym,
+                    definition,
+                    meaning,
+                    notes,
+                    team_domain,
+                    user_id,
+                    user_name,
+                    date_requested,
+                    approver_messages,
+                )
 
     status_code = "200"
     if event_type == "view_submission":
@@ -779,8 +781,9 @@ def persistDecision(acronym, userId, decision, team_domain):
         return {"statusCode": 400}
 
     reviewers.append(userId)
+    close_voting = decision and len(reviewers) >= REVIEWERS_MAX
 
-    if decision and len(reviewers) >= REVIEWERS_MAX:
+    if close_voting:
         table.update_item(
             Key={"Acronym": acronym},
             UpdateExpression=f"set {APPROVAL_STR}=:d",
@@ -833,7 +836,10 @@ def persistDecision(acronym, userId, decision, team_domain):
             acronym, decision, requester_id, team_domain, feedback_msgs
         )
 
-    return {"statusCode": response["ResponseMetadata"]["HTTPStatusCode"]}
+    return {
+        "statusCode": response["ResponseMetadata"]["HTTPStatusCode"],
+        "message": close_voting
+    }
 
 
 def update_reviewers(acronym, reviewers, decisionStr):
