@@ -116,12 +116,13 @@ def get_approval_form(
     if feedback is None or feedback == "":
         feedback = "There is no feedback yet"
     return {
+        "text": f"You have a new request: {acronym}",
         "attachments": [
             {
                 "color": attachment_color,
                 "blocks": [
                     add_simple_section(
-                        "*You have a new request:*\n<https://"
+                        "<https://"
                         + team_domain
                         + ".slack.com/team/"
                         + user_id
@@ -279,13 +280,14 @@ def notify_approval_response(
 
     if approved is True:
         message = (
-            f"Your submission for *{acronym}* was approved. Thanks for contributing!"
+            f"Your submission for {acronym} was approved. Thanks for contributing!"
         )
     else:
-        message = f"Sorry, your submission for *{acronym}* has not been approved at this time."
+        message = (
+            f"Sorry, your submission for {acronym} has not been approved at this time."
+        )
 
     blocks = [
-        add_simple_section(message),
         add_simple_section(
             "*Feedback from approvers:*\n"
             + (
@@ -297,6 +299,7 @@ def notify_approval_response(
     ]
 
     body = {
+        "text": message,
         "channel": requester_id,
         "attachments": [{"color": attachment_color, "blocks": blocks}],
     }
@@ -306,13 +309,14 @@ def notify_approval_response(
 def notify_pending_approval(user_id, acronym):
     print("Sending pending approval notification...")
     body = {
+        "text": "Submission successful!",
         "channel": user_id,
         "attachments": [
             {
                 "color": attachment_color,
                 "blocks": [
                     add_simple_section(
-                        f"*Submission successful!*\n Your submission for *{acronym}* has been received and is being reviewed."
+                        f"Your submission for *{acronym}* has been received and is being reviewed."
                     ),
                 ],
             }
@@ -563,7 +567,7 @@ def lambda_handler(event, context):
         if value == "Approve":
             approver_messages = persist_feedback_from_approver(payload)
             decision = persistDecision(acronym, approver_id, True, team_domain)
-            if decision['message'] is False:
+            if decision["message"] is False:
                 return update_approvers_feedback_section(
                     acronym,
                     definition,
@@ -579,7 +583,7 @@ def lambda_handler(event, context):
             # trigger_id = payload["trigger_id"]
             approver_messages = persist_feedback_from_approver(payload)
             decision = persistDecision(acronym, approver_id, False, team_domain)
-            if decision['message'] is False:
+            if decision["message"] is False:
                 return update_approvers_feedback_section(
                     acronym,
                     definition,
@@ -684,12 +688,13 @@ def update_form_closed(item, team_domain, decision):
     try:
         approvers_message_list = item["ApproverMessages"]
         acronym = item["Acronym"]
+        definition = item["Definition"].strip().strip('"').strip("'")
         approver_messages = item.get("ApproverFeedbackMessages", [])
         feedback = build_feedback_messages_list(approver_messages, team_domain)
         approval_message = (
-            f"{acronym} has been approved."
+            f'{acronym} "{definition}" has been approved.'
             if decision is True
-            else f"{acronym} has not been approved."
+            else f'{acronym} "{definition}" has not been approved.'
         )
         for element in approvers_message_list:
             modal = {
@@ -838,7 +843,7 @@ def persistDecision(acronym, userId, decision, team_domain):
 
     return {
         "statusCode": response["ResponseMetadata"]["HTTPStatusCode"],
-        "message": close_voting
+        "message": close_voting,
     }
 
 
