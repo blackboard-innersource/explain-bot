@@ -833,6 +833,8 @@ def persistDecision(acronym, userId, decision, team_domain):
             result = results["ResponseMetadata"]["HTTPStatusCode"]
             print("Result: " + str(result))
 
+            response_update = update_reviewers(acronym, reviewers, decisionStr)
+
             response = table.delete_item(Key={"Acronym": acronym})
             update_form_closed(item, team_domain, decision)
         else:
