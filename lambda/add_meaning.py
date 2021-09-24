@@ -289,7 +289,7 @@ def notify_approval_response(
 
     blocks = [
         add_simple_section(
-            "*Feedback from approvers:*\n"
+            "*Feedback from reviewers:*\n"
             + (
                 feedback
                 if feedback is not None and feedback != ""
@@ -706,7 +706,7 @@ def update_form_closed(item, team_domain, decision):
                                 f"*The request for {acronym} is completed.*\n{approval_message}\nThanks for contributing, the voting is closed!"
                             ),
                             add_simple_section(
-                                "*Feedback from approvers:*\n"
+                                "*Feedback from reviewers:*\n"
                                 + (
                                     feedback
                                     if feedback is not None and feedback != ""
