@@ -281,7 +281,7 @@ class ExplainBotCloudWatchStack(cdk.Stack):
             runtime=_lambda.Runtime.PYTHON_3_8,
             code=_lambda.Code.asset("lambda"),
             handler="send_reminder.lambda_handler",
-            timeout=cdk.Duration.minutes(5),
+            timeout=cdk.Duration.minutes(10),
             role=reminder_role,
             environment={"TABLE_NAME": table.table_name, "STAGE": stage},
         )

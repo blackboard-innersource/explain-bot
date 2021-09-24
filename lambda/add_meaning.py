@@ -823,6 +823,8 @@ def persistDecision(acronym, userId, decision, team_domain):
                     APPROVAL_STR: item.get("Denied", "Denied"),
                     REQUEST_TIMESTAMP: item.get("RequestTimestamp", ""),
                     "TeamDomain": item.get("TeamDomain", ""),
+                    "Deniers": item.get("Deniers", ""),
+                    "Approvers": item.get("Approvers", ""),
                 }
             )
 
