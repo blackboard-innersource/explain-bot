@@ -1,0 +1,5 @@
+[flake8]
+exclude = docs, setup.py, .git, *.md, *.yaml, *.txt, *.ini
+ignore = E501, E722, E203, E266, W503, BLK100, W291, I004
+max-line-length = 88
+max-complexity = 15

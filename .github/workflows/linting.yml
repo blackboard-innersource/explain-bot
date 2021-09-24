@@ -1,0 +1,14 @@
+on: [pull_request]
+
+jobs:
+  test-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install linting tool
+        run: pip install flake8
+
+      - name: Run linting tool
+        run: flake8 lambda/
