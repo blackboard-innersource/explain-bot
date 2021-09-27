@@ -626,6 +626,15 @@ def lambda_handler(event, context):
                 user_name_capitalized,
                 team_domain,
             )
+
+            headers = {
+                "Content-Type": "application/plain-text",
+                "Authorization": "Bearer " + OAUTH_TOKEN,
+            }
+            body = { "statusCode": status_code }
+            response = http.request( "POST", return_url, body=json.dumps(body), headers=headers )
+            print("response: " + str(response.status) + " " + str(response.data))
+
             create_approval_request(
                 acronym,
                 definition,
